@@ -12,7 +12,7 @@ void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBl
 	(*playerBlack)->SetAI(false,2);
 
 	*playerWhite = new ChessPlayer(gameState,true);
-	(*playerWhite)->SetAI(false,2);
+	(*playerWhite)->SetAI(false,3);
 }
 
 ChessPlayer::ChessPlayer(GameState* _gameState, bool _isWhite)
@@ -79,7 +79,7 @@ bool ChessPlayer::chooseAIMove(Move& moveToMake)
 		return true;
 	}
 
-	std::sort(moves.begin(), moves.end(), &MovePriority);
+	std::sort(moves.begin(), moves.end(), [this](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b); });
 	moveToMake = moves[0];
 	int bestScore = INT_MIN;
 
@@ -120,7 +120,7 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta)
 		return EvaluatePosition(white, *board,moves);
 	}
 
-	std::sort(moves.begin(), moves.end(), &MovePriority);
+	std::sort(moves.begin(), moves.end(), [this](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b); });
 	if (white)
 	{
 		int max = INT_MIN;
@@ -159,6 +159,28 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta)
 
 		return min;
 	}
+}
+
+bool ChessPlayer::PrioritiseMoveA(const Move& a, const Move& b)
+{
+	if (a.IsPromotion() || b.IsPromotion())
+	{
+		return (unsigned int)a.moveType < (unsigned int)b.moveType;
+	}
+
+	Board& board = gameState->GetBoard();
+
+	Piece aPiece = board[a.startPosition];
+	Piece bPiece = board[b.startPosition];
+	Piece aCapture = a.IsEnPassant() ? Piece(PieceType::PAWN, !aPiece.isWhite) : board[a.endPosition];
+	Piece bCapture = a.IsEnPassant() ? Piece(PieceType::PAWN, !bPiece.isWhite) : board[b.endPosition];
+
+	if (aCapture.Valid() || bCapture.Valid())
+	{
+		return GetMaterial(aCapture.type) > GetMaterial(bCapture.type);
+	}
+
+	return CenterDiff(a.endPosition) < CenterDiff(b.endPosition);
 }
 
 int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vector<Move>& moves)
@@ -208,35 +230,16 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 
 			if (piece.type != PieceType::KING)
 			{
-				score += (Piece::GetMaterialValue(piece.type) - CenterDiff(i)) * m ; //   * m;
+				score += (GetMaterial(piece.type) - CenterDiff(i)) * m ; //   * m;
 			}
 			else
 			{
-				score += (Piece::GetMaterialValue(piece.type) + CenterDiff(i)) * m;
+				score += (GetMaterial(piece.type) + CenterDiff(i)) * m;
 			}
 		}
 	}
 
 	return score;
-}
-
-bool MovePriority(const Move& a, const Move& b)
-{
-	if ((a.endPiece.type != a.startPiece.type) || (b.endPiece.type != b.startPiece.type))
-	{
-		int aPow = (int)(Piece::GetMaterialValue(a.endPiece.type) - Piece::GetMaterialValue(a.startPiece.type));
-		int bPow = (int)(Piece::GetMaterialValue(b.endPiece.type) - Piece::GetMaterialValue(b.startPiece.type));
-		return aPow > bPow;
-	}
-
-	if (a.capturedPiece.data != 0 || b.capturedPiece.data != 0)
-	{
-		int aPow = (int)(Piece::GetMaterialValue(a.capturedPiece.type) - Piece::GetMaterialValue(a.endPiece.type));
-		int bPow = (int)(Piece::GetMaterialValue(b.capturedPiece.type) - Piece::GetMaterialValue(b.endPiece.type));
-		return aPow > bPow;
-	}
-
-	return  CenterDiff(a.endPosition) < CenterDiff(b.endPosition);
 }
 
 int CenterDiff(int position)
@@ -252,7 +255,7 @@ int CenterDiff(int position)
 	int xDiff = std::min(abs((int)(centerMinX - x)), abs((int)(centerMaxX - x)));
 	int yDiff = std::min(abs((int)(centerMinY - y)), abs((int)(centerMaxY - y)));
 
-	return std::max(xDiff, yDiff); //(xDiff * xDiff) + (yDiff * yDiff); ///std::max(xDiff, yDiff); //(xDiff * xDiff) + (yDiff * yDiff);
+	return std::max(xDiff, yDiff); //(xDiff * xDiff) + (yDiff * yDiff); ///std::max(xDiff, yDiff);
 }
 
 int PosDiff(int position, int other)

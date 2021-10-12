@@ -19,7 +19,6 @@ struct PieceInPostion
 
 typedef vector<PieceInPostion> vecPieces;
 
-bool MovePriority(const Move& a, const Move& b);
 int CenterDiff(int position);
 int PosDiff(int position, int other);
 
@@ -38,9 +37,9 @@ public:
 protected:
 
 	bool IsWhite() { return isWhite; }
-
 	int MiniMax(int depth, bool white, int alpha, int beta);
 
+	virtual bool PrioritiseMoveA(const Move& a, const Move& b);
 	virtual int EvaluatePosition(bool white, const Board& board, const std::vector<Move>& moves);
 
 

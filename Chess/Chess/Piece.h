@@ -1,7 +1,7 @@
 #pragma once
 const unsigned int pieceValues[6]{ 100, 330,340, 500, 900, 10000 };
 
-enum class PieceType : unsigned int
+enum class PieceType : unsigned short
 {
 	PAWN = 1,
 	KNIGHT = 2,
@@ -11,27 +11,27 @@ enum class PieceType : unsigned int
 	KING = 6
 };
 
+static inline unsigned int GetMaterial(PieceType type) { return pieceValues[(unsigned int)type - 1]; }
+
 struct Piece
 {
 	union
 	{
 		struct
 		{
-			PieceType type : 4;
+			PieceType type : 3;
 			bool isWhite : 1;
-			bool moved : 1;
 		};
 
-		unsigned int data;
+		unsigned short data;
 	};
 
-	operator unsigned int& () { return data; }
+	operator unsigned short& () { return data; }
 
 	Piece();
-	Piece(unsigned int data);
-	Piece(PieceType type, bool moved, bool white);
+	Piece(unsigned short data);
+	Piece(PieceType type, bool white);
 
 	bool Valid() const { return data != 0; }
-	static unsigned int GetMaterialValue(PieceType type) { return pieceValues[(unsigned int)type - 1]; }
 };
 

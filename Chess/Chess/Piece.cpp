@@ -5,14 +5,13 @@ Piece::Piece()
 	data = 0;
 }
 
-Piece::Piece(unsigned int _data)
+Piece::Piece(unsigned short _data)
 {
 	data = _data;
 }
 
-Piece::Piece(PieceType _type, bool _moved, bool _white)
+Piece::Piece(PieceType _type, bool _white)
 {
 	type = _type;
-	moved = _moved;
 	isWhite = _white;
 }

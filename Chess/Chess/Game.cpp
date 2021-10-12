@@ -53,7 +53,7 @@ void Game::SetUpPlayerPieces(bool white)
     //Place pieces down:
     for (unsigned int x = Board::MIN_COL_INDEX; x < Board::MAX_ROW_INDEX; x++)
     {
-        board.At(x, firstRow) = Piece(pieces[x], false, white);
-        board.At(x, secondRow) = Piece(PieceType::PAWN, false, white);
+        board.At(x, firstRow) = Piece(pieces[x], white);
+        board.At(x, secondRow) = Piece(PieceType::PAWN, white);
     }
 }

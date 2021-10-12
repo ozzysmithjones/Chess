@@ -7,6 +7,23 @@
 
 const unsigned int NO_ENPASSANT = 255u;
 
+struct TurnState
+{
+	
+	unsigned int enpassantPosition;
+	Piece capturedPiece;
+
+	void SetCastlingIllegal(bool white);
+	void SetCastlingIllegal(bool white, bool right);
+	bool GetCastlingLegal(bool white, bool right);
+
+	TurnState();
+
+private:
+
+	bool castlingLegality[4];
+};
+
 class GameState
 {
 public:
@@ -28,16 +45,15 @@ private:
 	void GetAvalibleMoves(std::vector<Move>& moves);
 
 	bool isWhiteTurn = true;
-	std::stack<Move> log;
-	std::stack<unsigned int> enpassantableLog;
+	std::stack<Move> moveLog;
+	std::stack<TurnState> stateLog;
 	Board board;
 
 	void GetPawnMoves(std::vector<Move>& moves, unsigned int position, Piece pawn);
 	void GetSlidingMoves(std::vector<Move>& moves, unsigned int position, Piece piece, bool diagonal);
 	void GetKnightMoves(std::vector<Move>& moves, unsigned int position, Piece knight);
 	void GetKingMoves(std::vector<Move>& moves, unsigned int position, Piece king);
-
-	void AddPawnMove(std::vector<Move>& moves, const Move& pawnMove);
+	void AddPawnMove(std::vector<Move>& moves, const Move& pawnMove, bool isWhite);
 };
 
 

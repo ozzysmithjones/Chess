@@ -24,7 +24,7 @@ using namespace std;
 #define BUTTON_WIDTH 200
 #define BUTTON_HEIGHT 75
 
-#define SLEEP_TIME_MILLISECONDS 20 /// 1000 = 1 second
+#define SLEEP_TIME_MILLISECONDS 1000 /// 1000 = 1 second
 
 /** Prototype **/
 void keyFunction(unsigned char key, int x, int y);
@@ -740,7 +740,7 @@ void keyFunction(unsigned char key, int x, int y)
                     // the selected piece is being moved
                     if (chess->InterpretMove(interpretedMove, selectedCol, selectedRow, moveToCol, moveToRow))
                     {
-                        if (interpretedMove.startPiece.type != interpretedMove.endPiece.type)
+                        if (interpretedMove.IsPromotion())
                         {
                             needPromote = true;
                         }
@@ -789,7 +789,7 @@ void keyFunction(unsigned char key, int x, int y)
 		case 'q': case 'Q':
 			if(needPromote)
 			{
-                interpretedMove.endPiece.type = PieceType::QUEEN;
+                interpretedMove.moveType = MoveType::PROMOTE_QUEEN;
                 chess->MakePlayerMove(interpretedMove);
                 endOfTurn();
 				break;
@@ -798,7 +798,7 @@ void keyFunction(unsigned char key, int x, int y)
 		case 'r': case 'R':
 			if(needPromote)
 			{
-                interpretedMove.endPiece.type = PieceType::ROOK;
+                interpretedMove.moveType = MoveType::PROMOTE_ROOK;
                 chess->MakePlayerMove(interpretedMove);
                 endOfTurn();
 				break;
@@ -807,7 +807,7 @@ void keyFunction(unsigned char key, int x, int y)
 		case 'b': case 'B':
 			if(needPromote)
 			{
-                interpretedMove.endPiece.type = PieceType::BISHOP;
+                interpretedMove.moveType = MoveType::PROMOTE_BISHOP;
                 chess->MakePlayerMove(interpretedMove);
                 endOfTurn();
 				break;
@@ -816,7 +816,7 @@ void keyFunction(unsigned char key, int x, int y)
 		case 'k': case 'K':
 			if(needPromote)
 			{
-                interpretedMove.endPiece.type = PieceType::KNIGHT;
+                interpretedMove.moveType = MoveType::PROMOTE_KNIGHT;
                 chess->MakePlayerMove(interpretedMove);
                 endOfTurn();
 				break;
