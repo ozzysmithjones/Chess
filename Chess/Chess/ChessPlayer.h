@@ -19,7 +19,7 @@ struct PieceInPostion
 
 typedef vector<PieceInPostion> vecPieces;
 
-int CenterDiff(int position);
+int CenterDiff(int position, bool maximise = true);
 int PosDiff(int position, int other);
 
 class ChessPlayer

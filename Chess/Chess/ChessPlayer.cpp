@@ -9,10 +9,10 @@
 void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, GameState* gameState)
 {
 	*playerBlack = new ChessPlayer(gameState, false);
-	(*playerBlack)->SetAI(false,2);
+	(*playerBlack)->SetAI(false,3);
 
 	*playerWhite = new ChessPlayer(gameState,true);
-	(*playerWhite)->SetAI(false,3);
+	(*playerWhite)->SetAI(true,3);
 }
 
 ChessPlayer::ChessPlayer(GameState* _gameState, bool _isWhite)
@@ -234,7 +234,7 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 			}
 			else
 			{
-				score += (GetMaterial(piece.type) + CenterDiff(i)) * m;
+				score += (GetMaterial(piece.type) + CenterDiff(i,false)) * m;
 			}
 		}
 	}
@@ -242,7 +242,7 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 	return score;
 }
 
-int CenterDiff(int position)
+int CenterDiff(int position, bool maximise)
 {
 	unsigned int x = position & 7;
 	unsigned int y = position >> 3;
@@ -255,7 +255,7 @@ int CenterDiff(int position)
 	int xDiff = std::min(abs((int)(centerMinX - x)), abs((int)(centerMaxX - x)));
 	int yDiff = std::min(abs((int)(centerMinY - y)), abs((int)(centerMaxY - y)));
 
-	return std::max(xDiff, yDiff); //(xDiff * xDiff) + (yDiff * yDiff); ///std::max(xDiff, yDiff);
+	return maximise ? std::max(xDiff, yDiff) : std::min(xDiff, yDiff);//(xDiff * xDiff) + (yDiff * yDiff); ///std::max(xDiff, yDiff);
 }
 
 int PosDiff(int position, int other)
