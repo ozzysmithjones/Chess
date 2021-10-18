@@ -9,10 +9,10 @@
 void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, GameState* gameState)
 {
 	*playerBlack = new ChessPlayer(gameState, false);
-	(*playerBlack)->SetAI(false,3);
+	(*playerBlack)->SetAI(false,2);
 
 	*playerWhite = new ChessPlayer(gameState,true);
-	(*playerWhite)->SetAI(true,3);
+	(*playerWhite)->SetAI(false,3);
 }
 
 ChessPlayer::ChessPlayer(GameState* _gameState, bool _isWhite)
@@ -89,7 +89,7 @@ bool ChessPlayer::chooseAIMove(Move& moveToMake)
 		int score = MiniMax(depth, !isWhite, INT_MIN, INT_MAX) * (isWhite ? 1 : -1);
 		gameState->UnmakeMove();
 
-		if (score >= bestScore)
+		if (score > bestScore)
 		{
 			bestScore = score;
 			moveToMake = move;
@@ -125,17 +125,18 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta)
 	{
 		int max = INT_MIN;
 
-		for (auto& move : moves)
+		for (auto move : moves)
 		{
 			gameState->MakeMove(move);
 			max = std::max(max,MiniMax(depth-1, false,alpha,beta));
-			alpha = std::max(alpha, max);
 			gameState->UnmakeMove();
-			
-			if (beta <= alpha)
+
+			if (max >= beta)
 			{
 				break;
 			}
+
+			alpha = std::max(alpha, max);
 		}
 		
 		return max;
@@ -144,17 +145,18 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta)
 	{
 		int min = INT_MAX;
 
-		for (auto& move : moves)
+		for (auto move : moves)
 		{
 			gameState->MakeMove(move);
 			min = std::min(min,MiniMax(depth-1, true,alpha,beta));
-			beta = std::min(beta, min);
 			gameState->UnmakeMove();
 
-			if (beta <= alpha)
+			if (min <= alpha)
 			{
 				break;
 			}
+
+			beta = std::min(beta, min);
 		}
 
 		return min;
@@ -172,12 +174,14 @@ bool ChessPlayer::PrioritiseMoveA(const Move& a, const Move& b)
 
 	Piece aPiece = board[a.startPosition];
 	Piece bPiece = board[b.startPosition];
-	Piece aCapture = a.IsEnPassant() ? Piece(PieceType::PAWN, !aPiece.isWhite) : board[a.endPosition];
-	Piece bCapture = a.IsEnPassant() ? Piece(PieceType::PAWN, !bPiece.isWhite) : board[b.endPosition];
+	Piece aCapture = a.IsEnPassant() ? Piece(8,PieceType::PAWN, !aPiece.isWhite) : board[a.endPosition];
+	Piece bCapture = a.IsEnPassant() ? Piece(8,PieceType::PAWN, !bPiece.isWhite) : board[b.endPosition];
 
 	if (aCapture.Valid() || bCapture.Valid())
 	{
-		return GetMaterial(aCapture.type) > GetMaterial(bCapture.type);
+		int aPow = aCapture.Valid() ? GetMaterial((PieceType)aCapture.type) - GetMaterial((PieceType)aPiece.type) : INT_MIN;
+		int bPow = bCapture.Valid() ? GetMaterial((PieceType)bCapture.type) - GetMaterial((PieceType)bPiece.type) : INT_MIN;
+		return aPow > bPow;
 	}
 
 	return CenterDiff(a.endPosition) < CenterDiff(b.endPosition);
@@ -189,53 +193,33 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 	{
 		if (gameState->IsInCheck())
 		{
-			return white ? INT_MIN : INT_MAX;
+			return gameState->IsWhiteTurn() ? INT_MIN : INT_MAX;
 		}
 		else
 		{
 			return 0;
 		}
 	}
-	
-	/*
-	int whiteKingPos = -1;
-	int blackKingPos = -1;
-
-	for (unsigned int i = 0; i < 64u; i++)
-	{
-		if (board.C_Index(i).Valid() && board.C_Index(i).type == PieceType::KING)
-		{
-			if (board.C_Index(i).isWhite)
-			{
-				whiteKingPos = i;
-			}
-			else 
-			{
-				blackKingPos = i;
-			}
-
-			if (blackKingPos != -1 && whiteKingPos != -1)
-				break;
-		}
-	}
-	*/
 
 	int score = 0;
-	for (unsigned int i = 0; i < 64u; i++)
-	{
-		if (board.C_Index(i).Valid())
-		{
-			const Piece& piece = board.C_Index(i);
-			int m = (piece.isWhite ? 1 : -1);
+	unsigned int* whitePositions = gameState->GetWhitePositions();;
+	unsigned int* blackPositions = gameState->GetBlackPositions();;
 
-			if (piece.type != PieceType::KING)
-			{
-				score += (GetMaterial(piece.type) - CenterDiff(i)) * m ; //   * m;
-			}
-			else
-			{
-				score += (GetMaterial(piece.type) + CenterDiff(i,false)) * m;
-			}
+	for (unsigned int i = 0; i < 16; i++)
+	{
+		unsigned int whitePosition = whitePositions[i];
+		if (board.C_Index(whitePosition).id == i && board.C_Index(whitePosition).isWhite)
+		{
+			score += (GetMaterial((PieceType)board.C_Index(i).type) - CenterDiff(whitePosition));
+		}		
+	}
+
+	for (unsigned int i = 0; i < 16; i++)
+	{
+		unsigned int blackPosition = blackPositions[i];
+		if (board.C_Index(blackPosition).id == i && !board.C_Index(blackPosition).isWhite)
+		{
+			score -= (GetMaterial((PieceType)board.C_Index(i).type) - CenterDiff(blackPosition));
 		}
 	}
 

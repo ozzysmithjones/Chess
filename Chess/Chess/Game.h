@@ -26,8 +26,6 @@ public:
 	inline ChessPlayer* GetBlackPlayer() { return blackPlayer; }
 
 private:
-
-	void SetUpPlayerPieces(bool white);
 	GameState* gameState;
 	ChessPlayer* whitePlayer;
 	ChessPlayer* blackPlayer;

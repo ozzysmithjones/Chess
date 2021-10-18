@@ -3,8 +3,8 @@
 Game::Game()
 {
     gameState = new GameState();
-    SetUpPlayerPieces(true);
-    SetUpPlayerPieces(false);
+    gameState->SetUpPlayerPieces(true);
+    gameState->SetUpPlayerPieces(false);
 
     ChessPlayer::setupPlayers(&whitePlayer, &blackPlayer, gameState);
 }
@@ -40,20 +40,3 @@ bool Game::InterpretMove(Move& move, unsigned int positionStartX, unsigned int p
     return false;
 }
 
-void Game::SetUpPlayerPieces(bool white)
-{
-    Board& board = gameState->GetBoard();
-    unsigned int firstRow = white ? Board::MIN_ROW_INDEX : Board::MAX_ROW_INDEX - 1;
-    unsigned int secondRow = white ? Board::MIN_ROW_INDEX + 1 : Board::MAX_ROW_INDEX - 2;
-
-    //Order of the major pieces as they are on a chess board
-    PieceType pieces[] = { PieceType::ROOK, PieceType::KNIGHT, PieceType::BISHOP, PieceType::QUEEN,
-        PieceType::KING, PieceType::BISHOP, PieceType::KNIGHT, PieceType::ROOK };
-
-    //Place pieces down:
-    for (unsigned int x = Board::MIN_COL_INDEX; x < Board::MAX_ROW_INDEX; x++)
-    {
-        board.At(x, firstRow) = Piece(pieces[x], white);
-        board.At(x, secondRow) = Piece(PieceType::PAWN, white);
-    }
-}

@@ -1,4 +1,8 @@
 #include "GameState.h"
+GameState::GameState()
+{
+
+}
 void GameState::MakeMove(const Move& move)
 {
     TurnState turnState = stateLog.empty() ? TurnState() : stateLog.top();
@@ -8,6 +12,9 @@ void GameState::MakeMove(const Move& move)
     Piece piece = board[move.startPosition];
     board[move.endPosition] = piece;
     board[move.startPosition] = 0;
+
+    unsigned int* positions = piece.isWhite ? whitePositions : blackPositions;
+    positions[piece.id] = move.endPosition;
 
     //castle directions:
     int left = piece.isWhite ? 0 : (Board::WIDTH * Board::HEIGHT) - 8;
@@ -45,20 +52,32 @@ void GameState::MakeMove(const Move& move)
         break;
 
     case MoveType::ENPASSANT_LOWER:
+        turnState.capturedPieceEnpassant = board[move.startPosition - 1];
         board[move.startPosition - 1] = 0;
         break;
     case MoveType::ENPASSANT_HIGHER:
+        turnState.capturedPieceEnpassant = board[move.startPosition + 1];
         board[move.startPosition + 1] = 0;
         break;
     case MoveType::CASTLE_LOWER:
-        board[move.endPosition + 1] = board[left];
+
+    {
+        Piece rook = board[left];
+        positions[rook.id] = move.endPosition + 1;
+        board[move.endPosition + 1] = rook;
         board[left] = 0;
+    }
 
         turnState.SetCastlingIllegal(piece.isWhite);
         break;
     case MoveType::CASTLE_HIGHER:
-        board[move.endPosition - 1] = board[right];
+
+    {
+        Piece rook = board[right];
+        positions[rook.id] = move.endPosition - 1;
+        board[move.endPosition - 1] = rook;
         board[right] = 0;
+    }
 
         turnState.SetCastlingIllegal(piece.isWhite);
         break;
@@ -92,6 +111,9 @@ void GameState::UnmakeMove()
     board[move.startPosition] = piece;
     board[move.endPosition] = stateLog.empty() ? Piece(0) : stateLog.top().capturedPiece;
 
+    unsigned int* positions = piece.isWhite ? whitePositions : blackPositions;
+    positions[piece.id] = move.startPosition;
+
     //for castle:
     int left = piece.isWhite ? 0 : (Board::WIDTH * Board::HEIGHT) - 8;
     int right = left + 7;
@@ -102,18 +124,28 @@ void GameState::UnmakeMove()
     case MoveType::NORMAL:
         break;
     case MoveType::ENPASSANT_LOWER:
-        board[move.startPosition - 1] = Piece(PieceType::PAWN, !piece.isWhite);
+        board[move.startPosition - 1] = stateLog.top().capturedPieceEnpassant;
         break;
     case MoveType::ENPASSANT_HIGHER:
-        board[move.startPosition + 1] = Piece(PieceType::PAWN, !piece.isWhite);
+        board[move.startPosition + 1] = stateLog.top().capturedPieceEnpassant;
         break;
     case MoveType::CASTLE_LOWER:
-        board[left] = board[move.endPosition + 1];
+
+    {
+        Piece rook = board[move.endPosition + 1];
+        positions[rook.id] = left;
+        board[left] = rook;
         board[move.endPosition + 1] = 0;
+    }
         break;
     case MoveType::CASTLE_HIGHER:
-        board[right] = board[move.endPosition - 1];
+
+    {
+        Piece rook = board[move.endPosition - 1];
+        positions[rook.id] = right;
+        board[right] = rook;
         board[move.endPosition - 1] = 0;
+    }
         break;
     case MoveType::PROMOTE_QUEEN:
     case MoveType::PROMOTE_ROOK:
@@ -123,6 +155,7 @@ void GameState::UnmakeMove()
         break;
     }
 
+
     //shift turn
     isWhiteTurn = !isWhiteTurn;
     stateLog.pop();
@@ -130,7 +163,7 @@ void GameState::UnmakeMove()
 
 bool GameState::IsInCheck()
 {
-    return IsInCheck(false);
+    return IsInCheck(isWhiteTurn);
 }
 
 void GameState::GetAvalibleMoves(std::vector<Move>& moves, unsigned int position, Piece piece)
@@ -210,30 +243,18 @@ void GameState::GetAvalibleMoves(std::vector<Move>& moves)
 
 
 
-bool GameState::IsInCheck(bool opponent)
+bool GameState::IsInCheck(bool white)
 {
+    unsigned int kingPos = white ? whitePositions[kingId] : blackPositions[kingId];
+    unsigned int* opponent = white ? blackPositions : whitePositions;
 
-    unsigned int kingPos = 255;
-
-    for (unsigned int i = 0; i < 64u; i++)
+    for (unsigned int i = 0; i < 16;i++)
     {
-        if (board[i].type == PieceType::KING && ((board[i].isWhite == isWhiteTurn) != opponent))
-        {
-            kingPos = i;
-            break;
-        }
-    }
-
-    if (kingPos == 255)
-        return false;
-
-
-    for (unsigned int i = 0; i < 64u; i++)
-    {
-        if (board[i] != 0 && ((board[i].isWhite == isWhiteTurn) == opponent))
+        int pos = opponent[i];
+        if (board[pos].Valid() && board[pos].id == i && board[pos].isWhite != white)
         {
             std::vector<Move> moves;
-            GetAvalibleMoves(moves, i, board[i]);
+            GetAvalibleMoves(moves, pos, board[pos]);
 
             for (auto& move : moves)
             {
@@ -248,17 +269,38 @@ bool GameState::IsInCheck(bool opponent)
     return false;
 }
 
+void GameState::SetUpPlayerPieces(bool white)
+{
+    unsigned int firstRow = white ? Board::MIN_ROW_INDEX : Board::MAX_ROW_INDEX - 1;
+    unsigned int secondRow = white ? Board::MIN_ROW_INDEX + 1 : Board::MAX_ROW_INDEX - 2;
+    unsigned int* positions = white ? whitePositions : blackPositions;
+
+    //Order of the major pieces as they are on a chess board
+    PieceType pieces[] = { PieceType::ROOK, PieceType::KNIGHT, PieceType::BISHOP, PieceType::QUEEN,
+        PieceType::KING, PieceType::BISHOP, PieceType::KNIGHT, PieceType::ROOK };
+
+    //Place pieces down:
+    for (unsigned int x = Board::MIN_COL_INDEX; x < Board::MAX_ROW_INDEX; x++)
+    {
+        board.At(x, firstRow) = Piece(x,pieces[x], white);
+        board.At(x, secondRow) = Piece(x + 8,PieceType::PAWN, white);
+        positions[x] = (firstRow << 3) + x;
+        positions[x + 8] = (secondRow << 3) + x;
+    }
+}
+
 std::vector<Move> GameState::GetLegalMoves()
 {
     std::vector<Move> moves;
     moves.reserve(20);
     GetAvalibleMoves(moves);
 
+    
     for (unsigned int i = 0; i < moves.size();i++)
     {
         MakeMove(moves[i]);
 
-        if (IsInCheck(true))
+        if (IsInCheck(!isWhiteTurn))
         {
             moves[i] = moves[moves.size() - 1];
             moves.pop_back();
@@ -267,6 +309,7 @@ std::vector<Move> GameState::GetLegalMoves()
 
         UnmakeMove();
     }
+    
 
     return moves;
 }
@@ -275,11 +318,13 @@ const std::vector<Move> GameState::GetLegalMoves(unsigned int x, unsigned int y)
 {
     std::vector<Move> moves;
     GetAvalibleMoves(moves, (y << 3) + x, board[(y << 3) + x]);
+
+    
     for (unsigned int i = 0; i < moves.size(); i++)
     {
         MakeMove(moves[i]);
 
-        if (IsInCheck(true))
+        if (IsInCheck(!isWhiteTurn))
         {
             moves[i] = moves[moves.size() - 1];
             moves.pop_back();
@@ -288,6 +333,7 @@ const std::vector<Move> GameState::GetLegalMoves(unsigned int x, unsigned int y)
 
         UnmakeMove();
     }
+    
 
     return moves;
 }
@@ -530,3 +576,6 @@ TurnState::TurnState()
     castlingLegality[2] = true;
     castlingLegality[3] = true;
 }
+
+
+

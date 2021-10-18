@@ -5,13 +5,14 @@ Piece::Piece()
 	data = 0;
 }
 
-Piece::Piece(unsigned short _data)
+Piece::Piece(unsigned char _data)
 {
 	data = _data;
 }
 
-Piece::Piece(PieceType _type, bool _white)
+Piece::Piece(unsigned int _id, PieceType _type, bool _white)
 {
-	type = _type;
+	id = _id;
+	type = (unsigned int)_type;
 	isWhite = _white;
 }

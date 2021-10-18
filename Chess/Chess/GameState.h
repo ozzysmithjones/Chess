@@ -7,11 +7,13 @@
 
 const unsigned int NO_ENPASSANT = 255u;
 
+
 struct TurnState
 {
 	
 	unsigned int enpassantPosition;
 	Piece capturedPiece;
+	Piece capturedPieceEnpassant;
 
 	void SetCastlingIllegal(bool white);
 	void SetCastlingIllegal(bool white, bool right);
@@ -28,8 +30,12 @@ class GameState
 {
 public:
 
-	inline Board& GetBoard() { return board; }
+	GameState();
 
+	void SetUpPlayerPieces(bool white);
+	inline Board& GetBoard() { return board; }
+	inline unsigned int* GetWhitePositions() { return whitePositions; }
+	inline unsigned int* GetBlackPositions() { return blackPositions; }
 	void MakeMove(const Move& move);
 	void UnmakeMove();
 
@@ -40,7 +46,8 @@ public:
 
 private:
 
-	bool IsInCheck(bool opponent);
+	bool IsInCheck(bool white);
+	
 	void GetAvalibleMoves(std::vector<Move>& moves, unsigned int position, Piece piece);
 	void GetAvalibleMoves(std::vector<Move>& moves);
 
@@ -48,6 +55,11 @@ private:
 	std::stack<Move> moveLog;
 	std::stack<TurnState> stateLog;
 	Board board;
+
+	const unsigned int kingId = 4;
+
+	unsigned int whitePositions[16];
+	unsigned int blackPositions[16];
 
 	void GetPawnMoves(std::vector<Move>& moves, unsigned int position, Piece pawn);
 	void GetSlidingMoves(std::vector<Move>& moves, unsigned int position, Piece piece, bool diagonal);
