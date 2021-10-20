@@ -13,7 +13,7 @@ void GameState::MakeMove(const Move& move)
     board[move.endPosition] = piece;
     board[move.startPosition] = 0;
 
-    unsigned int* positions = piece.isWhite ? whitePositions : blackPositions;
+    unsigned int* positions = piece.isWhite ? whitePlayer.positions : blackPlayer.positions;
     positions[piece.id] = move.endPosition;
 
     //castle directions:
@@ -111,7 +111,7 @@ void GameState::UnmakeMove()
     board[move.startPosition] = piece;
     board[move.endPosition] = stateLog.empty() ? Piece(0) : stateLog.top().capturedPiece;
 
-    unsigned int* positions = piece.isWhite ? whitePositions : blackPositions;
+    unsigned int* positions = piece.isWhite ? whitePlayer.positions : blackPlayer.positions;
     positions[piece.id] = move.startPosition;
 
     //for castle:
@@ -245,8 +245,8 @@ void GameState::GetAvalibleMoves(std::vector<Move>& moves)
 
 bool GameState::IsInCheck(bool white)
 {
-    unsigned int kingPos = white ? whitePositions[kingId] : blackPositions[kingId];
-    unsigned int* opponent = white ? blackPositions : whitePositions;
+    unsigned int kingPos = white ? whitePlayer.positions[kingId] : blackPlayer.positions[kingId];
+    unsigned int* opponent = white ? blackPlayer.positions : whitePlayer.positions;
 
     for (unsigned int i = 0; i < 16;i++)
     {
@@ -273,7 +273,7 @@ void GameState::SetUpPlayerPieces(bool white)
 {
     unsigned int firstRow = white ? Board::MIN_ROW_INDEX : Board::MAX_ROW_INDEX - 1;
     unsigned int secondRow = white ? Board::MIN_ROW_INDEX + 1 : Board::MAX_ROW_INDEX - 2;
-    unsigned int* positions = white ? whitePositions : blackPositions;
+    unsigned int* positions = white ? whitePlayer.positions : blackPlayer.positions;
 
     //Order of the major pieces as they are on a chess board
     PieceType pieces[] = { PieceType::ROOK, PieceType::KNIGHT, PieceType::BISHOP, PieceType::QUEEN,
@@ -533,6 +533,28 @@ void GameState::AddPawnMove(std::vector<Move>& moves, const Move& move, bool isW
     else 
     {
         moves.push_back(move);
+    }
+}
+
+void GameState::GetPins(std::vector<int>& pins)
+{
+    int kingPos = isWhiteTurn ? board[whitePlayer.positions[kingId]] : board[blackPlayer.positions[kingId]];
+
+    //orthogonal:
+
+    int x = (kingPos & 7) , y = (kingPos >> 3);
+
+    while (board.InBounds(x, y))
+    {
+        for (unsigned int i = 0; i < 4; i++)
+        {
+            const Piece& piece = board.C_At(x, y);
+            if (piece.Valid() && piece.isWhite != isWhiteTurn && (piece.type == PieceType::ROOK || piece.type == PieceType::QUEEN))
+            {
+                pins.push_back((y << 3) + x);
+                break;
+            }
+        }
     }
 }
 

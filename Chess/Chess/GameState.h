@@ -26,6 +26,12 @@ private:
 	bool castlingLegality[4];
 };
 
+struct Player
+{
+	unsigned int positions[16]{ 0 };
+	unsigned int influence[64]{ 0 };
+};
+
 class GameState
 {
 public:
@@ -34,8 +40,8 @@ public:
 
 	void SetUpPlayerPieces(bool white);
 	inline Board& GetBoard() { return board; }
-	inline unsigned int* GetWhitePositions() { return whitePositions; }
-	inline unsigned int* GetBlackPositions() { return blackPositions; }
+	inline unsigned int* GetWhitePositions() { return whitePlayer.positions; }
+	inline unsigned int* GetBlackPositions() { return blackPlayer.positions; }
 	void MakeMove(const Move& move);
 	void UnmakeMove();
 
@@ -57,15 +63,16 @@ private:
 	Board board;
 
 	const unsigned int kingId = 4;
-
-	unsigned int whitePositions[16];
-	unsigned int blackPositions[16];
+	Player whitePlayer;
+	Player blackPlayer;
 
 	void GetPawnMoves(std::vector<Move>& moves, unsigned int position, Piece pawn);
 	void GetSlidingMoves(std::vector<Move>& moves, unsigned int position, Piece piece, bool diagonal);
 	void GetKnightMoves(std::vector<Move>& moves, unsigned int position, Piece knight);
 	void GetKingMoves(std::vector<Move>& moves, unsigned int position, Piece king);
 	void AddPawnMove(std::vector<Move>& moves, const Move& pawnMove, bool isWhite);
+
+	void GetPins(std::vector<int>& pins);
 };
 
 
