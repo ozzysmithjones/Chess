@@ -468,7 +468,7 @@ void GameState::GetKnightMoves(std::vector<Move>& moves, unsigned int position, 
     unsigned int x;
     unsigned int y;
 
-    for (unsigned int i = 0; i < 8; i++)
+    for (unsigned int i = 0; i < 8u; i++)
     {
         x = centerX + ((i & 1u) != 0u ? 2 : 1) * ((i & 2u) != 0u ? 1 : -1);
         y = centerY + ((i & 1u) == 0u ? 2 : 1) * ((i & 4u) != 0u ? 1 : -1);

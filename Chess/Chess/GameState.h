@@ -39,7 +39,8 @@ public:
 	GameState();
 
 	void SetUpPlayerPieces(bool white);
-	inline Board& GetBoard() { return board; }
+	inline const Board& GetBoard() const { return board; }
+	inline Board& GetBoardRef() { return board; }
 	inline unsigned int* GetWhitePositions() { return whitePlayer.positions; }
 	inline unsigned int* GetBlackPositions() { return blackPlayer.positions; }
 	void MakeMove(const Move& move);

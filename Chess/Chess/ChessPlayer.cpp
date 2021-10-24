@@ -17,7 +17,7 @@ void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBl
 
 ChessPlayer::ChessPlayer(GameState* _gameState, bool _isWhite)
 {
-	board = &_gameState->GetBoard();
+	board = &_gameState->GetBoardRef();
 	isWhite = _isWhite;
 	gameState = _gameState;
 }
@@ -163,19 +163,17 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta)
 	}
 }
 
-bool ChessPlayer::PrioritiseMoveA(const Move& a, const Move& b)
+bool ChessPlayer::PrioritiseMoveA(const Move& a, const Move& b) const
 {
-	if (a.IsPromotion() || b.IsPromotion())
-	{
-		return (unsigned int)a.moveType < (unsigned int)b.moveType;
-	}
+	//if (a.IsPromotion() || b.IsPromotion())
+	//{
+		//return (unsigned int)a.moveType < (unsigned int)b.moveType;
+	//}
 
-	Board& board = gameState->GetBoard();
-
-	Piece aPiece = board[a.startPosition];
-	Piece bPiece = board[b.startPosition];
-	Piece aCapture = a.IsEnPassant() ? Piece(8,PieceType::PAWN, !aPiece.isWhite) : board[a.endPosition];
-	Piece bCapture = a.IsEnPassant() ? Piece(8,PieceType::PAWN, !bPiece.isWhite) : board[b.endPosition];
+	Piece aPiece = board->C_Index(a.startPosition);
+	Piece bPiece = board->C_Index(b.startPosition);
+	Piece aCapture = a.IsEnPassant() ? Piece(8,PieceType::PAWN, !aPiece.isWhite) : board->C_Index(a.endPosition);
+	Piece bCapture = a.IsEnPassant() ? Piece(8,PieceType::PAWN, !bPiece.isWhite) : board->C_Index(b.endPosition);
 
 	if (aCapture.Valid() || bCapture.Valid())
 	{
