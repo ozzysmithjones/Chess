@@ -24,7 +24,7 @@ using namespace std;
 #define BUTTON_WIDTH 200
 #define BUTTON_HEIGHT 75
 
-#define SLEEP_TIME_MILLISECONDS 1000 /// 1000 = 1 second
+#define SLEEP_TIME_MILLISECONDS 2 /// 1000 = 1 second
 
 /** Prototype **/
 void keyFunction(unsigned char key, int x, int y);
@@ -287,9 +287,11 @@ void drawBoardSquares()
             c = 1.0f*(col- (Board::WIDTH / 2));
             if(row == selectedRow && col == selectedCol)
             {
+                unsigned int index = ToIndex(selectedCol, selectedRow);
+
                 if(selected) glColor3f(0.33f, 0.420f, 0.184f);
-                else if(board.C_At(selectedCol, selectedRow).Valid())
-                    if(board.C_At(selectedCol, selectedRow).isWhite == chess->IsWhiteTurn())
+                else if(IsValid(board[index]))
+                    if(IsWhite(board[index]) == chess->IsWhiteTurn())
                         glColor3f(0.0f, 0.5f, 0.0f);
                     else glColor3f(1.0f, 0.0f, 0.0f);
                 else glColor3f(0.3f, 0.7f, 0.5f);
@@ -328,13 +330,20 @@ void drawValidMoves()
 
         for(int id = 0; id < vec_size; id++)
         {
-            row = moves[id].endPosition >> 3;
-            col = moves[id].endPosition & 7;
+            unsigned int endPosition = GetEndPos(moves[id]);
+            row = endPosition >> 3;
+            col = endPosition & 7;
 
-            switch(moves[id].moveType)
+            switch(GetMoveType(moves[id]))
             {
                 case MoveType::NORMAL:
                     glColor3f(0.8f, 1.0f, 0.6f);
+                    break;
+                case MoveType::ADVANCED_PAWN:
+                    glColor3f(0.8f, 1.0f, 0.6f);
+                    break;
+                case MoveType::PROMOTION:
+                    glColor3f(1.0f, 0.5f, 0.6f);
                     break;
                // case MoveType::CAPTURE:
                     //glColor3f(1.0f, 0.0f, 0.0f);
@@ -385,14 +394,18 @@ void drawChessPieces()
     {
         for(int col = Board::MIN_COL_INDEX; col < Board::MAX_COL_INDEX; col++)
         {
-            if(board.C_At(col, row).Valid())
+            if(IsValid(board.C_At(col, row)))
             {
+                const bool isWhite = IsWhite(board.C_At(col, row));
+                const PieceType pieceType = GetType(board.C_At(col, row));
+
                 glPushMatrix();
                     if(selected && row == selectedRow && col == selectedCol) z = 1.0;
                     else z = 0.5;
                     glTranslatef((row - (Board::WIDTH / 2)) * 1.0f + 0.5f, (col - (Board::HEIGHT / 2)) * 1.0f + 0.5f, z);
                     glScalef(0.01f, 0.01f, 0.01f);
-                    if (board.C_At(col, row).isWhite)
+
+                    if (isWhite)
                     {
                         glRotatef(90, 0.0f, 0.0f, 1.0f);
                         glColor3f(1.0f, 1.0f, 0.5f);
@@ -403,17 +416,18 @@ void drawChessPieces()
                         glColor3f(0.5f, 0.5f, 0.5f);
                     }
 
-                    switch(board.C_At(col, row).type)
+                    switch(pieceType)
                     {
-					case PieceType::PAWN: Pawn.Draw(board.C_At(col, row).isWhite); break;
-                        case PieceType::ROOK: Rook.Draw(board.C_At(col, row).isWhite); break;
-                        case PieceType::KNIGHT: Knight.Draw(board.C_At(col, row).isWhite); break;
-                        case PieceType::BISHOP: Bishop.Draw(board.C_At(col, row).isWhite); break;
-                        case PieceType::QUEEN: Queen.Draw(board.C_At(col, row).isWhite); break;
-                        case PieceType::KING: King.Draw(board.C_At(col, row).isWhite); break;
+					case PieceType::PAWN: Pawn.Draw(isWhite); break;
+                        case PieceType::ROOK: Rook.Draw(isWhite); break;
+                        case PieceType::KNIGHT: Knight.Draw(isWhite); break;
+                        case PieceType::BISHOP: Bishop.Draw(isWhite); break;
+                        case PieceType::QUEEN: Queen.Draw(isWhite); break;
+                        case PieceType::KING: King.Draw(isWhite); break;
                     }
                 glPopMatrix();
             }
+            
         }
     }
     glColor3f(0, 0, 0);
@@ -563,12 +577,15 @@ void newAITurn()
     endOfTurn();
 	Sleep(SLEEP_TIME_MILLISECONDS);
 
-    selectedRow = (move.startPosition >> 3);
-    selectedCol = (move.startPosition & 7);
+    unsigned int startPosition = GetStartPos(move);
+    unsigned int endPosition = GetEndPos(move);
+
+    selectedRow = (startPosition >> 3);
+    selectedCol = (startPosition & 7);
 	keyFunction(' ', 0, 0);
 
-	moveToRow = (move.endPosition >> 3);
-	moveToCol = (move.endPosition & 7);
+	moveToRow = (endPosition >> 3);
+	moveToCol = (endPosition & 7);
 	keyFunction(' ', 0, 0);
 
 	ai_moving = true;
@@ -734,13 +751,14 @@ void keyFunction(unsigned char key, int x, int y)
         case ' ':
             if (!needPromote && !checkMate && !verify && inGame && !board_rotating)
             {
+                
                 const Board& board = chess->GetChessBoard();
                 if (selected)
                 {
                     // the selected piece is being moved
                     if (chess->InterpretMove(interpretedMove, selectedCol, selectedRow, moveToCol, moveToRow))
                     {
-                        if (interpretedMove.IsPromotion())
+                        if (GetMoveType(interpretedMove) == MoveType::PROMOTION)
                         {
                             needPromote = true;
                         }
@@ -754,7 +772,7 @@ void keyFunction(unsigned char key, int x, int y)
 
                     selected = false;
                 }
-                else if (board.C_At(selectedCol, selectedRow).Valid() && board.C_At(selectedCol, selectedRow).isWhite == chess->IsWhiteTurn())
+                else if (IsValid(board.C_At(selectedCol, selectedRow)) && IsWhite(board.C_At(selectedCol, selectedRow)) == chess->IsWhiteTurn())
                 {
                     // a piece is being selected 
                     selected = !selected;
@@ -764,6 +782,7 @@ void keyFunction(unsigned char key, int x, int y)
                         moveToCol = selectedCol;
                     }
                 }
+                
             }
             break;
         case 'n':
@@ -789,7 +808,7 @@ void keyFunction(unsigned char key, int x, int y)
 		case 'q': case 'Q':
 			if(needPromote)
 			{
-                interpretedMove.moveType = MoveType::PROMOTE_QUEEN;
+                interpretedMove = SetPromoteMove(interpretedMove, PieceType::QUEEN);
                 chess->MakePlayerMove(interpretedMove);
                 endOfTurn();
 				break;
@@ -798,7 +817,7 @@ void keyFunction(unsigned char key, int x, int y)
 		case 'r': case 'R':
 			if(needPromote)
 			{
-                interpretedMove.moveType = MoveType::PROMOTE_ROOK;
+                interpretedMove = SetPromoteMove(interpretedMove, PieceType::ROOK);
                 chess->MakePlayerMove(interpretedMove);
                 endOfTurn();
 				break;
@@ -807,7 +826,7 @@ void keyFunction(unsigned char key, int x, int y)
 		case 'b': case 'B':
 			if(needPromote)
 			{
-                interpretedMove.moveType = MoveType::PROMOTE_BISHOP;
+                interpretedMove = SetPromoteMove(interpretedMove, PieceType::BISHOP);
                 chess->MakePlayerMove(interpretedMove);
                 endOfTurn();
 				break;
@@ -816,12 +835,17 @@ void keyFunction(unsigned char key, int x, int y)
 		case 'k': case 'K':
 			if(needPromote)
 			{
-                interpretedMove.moveType = MoveType::PROMOTE_KNIGHT;
+                interpretedMove = SetPromoteMove(interpretedMove, PieceType::KNIGHT);
                 chess->MakePlayerMove(interpretedMove);
                 endOfTurn();
 				break;
 			}
 			else break;
+
+        case 'z':
+
+            chess->Undo();
+            break;
 		case 'c': case 'C':
 			//boardCopy = chess->getCopyOfBoard();
 			break;

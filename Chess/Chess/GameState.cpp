@@ -1,98 +1,100 @@
 #include "GameState.h"
+
 GameState::GameState()
 {
 
 }
 void GameState::MakeMove(const Move& move)
 {
+    //Get move variables: (they are compressed into an integer for space efficiency)
+    unsigned int startPosition  = GetStartPos(move);
+    unsigned int endPosition    = GetEndPos(move);
+    MoveType moveType           = GetMoveType(move);
+    PieceType captureType       = GetCaptureType(move);
+    PieceType promoteType       = GetPromoteType(move);
+
+    //get piece variables: (they are compressed into an integer for space efficiency)
+    Piece piece                 = board[startPosition];
+    bool pieceIsWhite           = IsWhite(piece);
+    unsigned int pieceId        = GetId(piece);
+    PieceType pieceType         = GetType(piece);
+
+    //Create a new "turn state" struct to keep track of enpassant/castle ruling
     TurnState turnState = stateLog.empty() ? TurnState() : stateLog.top();
     turnState.enpassantPosition = NO_ENPASSANT;
-    turnState.capturedPiece = board[move.endPosition];
+    turnState.capturedPiece = board[endPosition];
 
-    Piece piece = board[move.startPosition];
-    board[move.endPosition] = piece;
-    board[move.startPosition] = 0;
-
-    unsigned int* positions = piece.isWhite ? whitePlayer.positions : blackPlayer.positions;
-    positions[piece.id] = move.endPosition;
+    //Move the piece:
+    unsigned int* positions = pieceIsWhite ? whitePlayer.positions : blackPlayer.positions;
+    positions[pieceId] = endPosition;
+    board[endPosition] = piece;
+    board[startPosition] = 0u;
 
     //castle directions:
-    int left = piece.isWhite ? 0 : (Board::WIDTH * Board::HEIGHT) - 8;
+    int left = pieceIsWhite ? 0 : (Board::WIDTH * Board::HEIGHT) - 8;
     int right = left + 7;
 
-    switch (move.moveType)
+    switch (moveType)
     {
     case MoveType::NORMAL:
 
-        //advanced pawn
-        if (piece.type == PieceType::PAWN && abs((int)((move.endPosition >> 3) - (move.startPosition >> 3))) == 2)
-        {
-            turnState.enpassantPosition = move.endPosition;
-        }
-
         //castling made illegal
-
-        if (piece.type == PieceType::KING)
+        if (pieceType == PieceType::KING)
         {
-            turnState.SetCastlingIllegal(piece.isWhite);
+            turnState.SetCastlingIllegal(pieceIsWhite);
         }
 
-        if (piece.type == PieceType::ROOK)
+        if (pieceType == PieceType::ROOK)
         {
-            if (move.startPosition == right)
+            if (startPosition == right)
             {
-                turnState.SetCastlingIllegal(piece.isWhite, true);
+                turnState.SetCastlingIllegal(pieceIsWhite, true);
             }
-            else if (move.startPosition == left)
+            else if (startPosition == left)
             {
-                turnState.SetCastlingIllegal(piece.isWhite, false);
+                turnState.SetCastlingIllegal(pieceIsWhite, false);
             }
         }
 
+        break;
+
+    case MoveType::ADVANCED_PAWN:
+        turnState.enpassantPosition = endPosition;
         break;
 
     case MoveType::ENPASSANT_LOWER:
-        turnState.capturedPieceEnpassant = board[move.startPosition - 1];
-        board[move.startPosition - 1] = 0;
+        turnState.capturedPieceEnpassant = board[startPosition - 1];
+        board[startPosition - 1] = 0u;
         break;
     case MoveType::ENPASSANT_HIGHER:
-        turnState.capturedPieceEnpassant = board[move.startPosition + 1];
-        board[move.startPosition + 1] = 0;
+        turnState.capturedPieceEnpassant = board[startPosition + 1];
+        board[startPosition + 1] = 0u;
         break;
     case MoveType::CASTLE_LOWER:
 
     {
         Piece rook = board[left];
-        positions[rook.id] = move.endPosition + 1;
-        board[move.endPosition + 1] = rook;
-        board[left] = 0;
+        positions[GetId(rook)] = endPosition + 1;
+        board[endPosition + 1] = rook;
+        board[left] = 0u;
     }
 
-        turnState.SetCastlingIllegal(piece.isWhite);
+        turnState.SetCastlingIllegal(pieceIsWhite);
         break;
     case MoveType::CASTLE_HIGHER:
 
     {
         Piece rook = board[right];
-        positions[rook.id] = move.endPosition - 1;
-        board[move.endPosition - 1] = rook;
-        board[right] = 0;
+        positions[GetId(rook)] = endPosition - 1;
+        board[endPosition - 1] = rook;
+        board[right] = 0u;
     }
 
-        turnState.SetCastlingIllegal(piece.isWhite);
+        turnState.SetCastlingIllegal(pieceIsWhite);
         break;
 
-    case MoveType::PROMOTE_QUEEN:
-        board[move.endPosition].type = PieceType::QUEEN;
-        break;
-    case MoveType::PROMOTE_ROOK:
-        board[move.endPosition].type = PieceType::ROOK;
-        break;
-    case MoveType::PROMOTE_BISHOP:
-        board[move.endPosition].type = PieceType::BISHOP;
-        break;
-    case MoveType::PROMOTE_KNIGHT:
-        board[move.endPosition].type = PieceType::KNIGHT;
+    case MoveType::PROMOTION:
+        SetType(board[endPosition], promoteType);
         break;
     }
 
@@ -107,54 +109,69 @@ void GameState::UnmakeMove()
     const Move& move = moveLog.top();
     moveLog.pop();
 
-    Piece piece = board[move.endPosition];
-    board[move.startPosition] = piece;
-    board[move.endPosition] = stateLog.empty() ? Piece(0) : stateLog.top().capturedPiece;
+    //Get move variables: (they are compressed into an integer for space efficiency)
+    unsigned int startPosition = GetStartPos(move);
+    unsigned int endPosition = GetEndPos(move);
+    MoveType moveType = GetMoveType(move);
+    PieceType captureType = GetCaptureType(move);
+    PieceType promoteType = GetPromoteType(move);
 
-    unsigned int* positions = piece.isWhite ? whitePlayer.positions : blackPlayer.positions;
-    positions[piece.id] = move.startPosition;
+    //get piece variables: (they are compressed into an integer for space efficiency)
+    Piece piece = board[endPosition];
+    bool pieceIsWhite = IsWhite(piece);
+    unsigned int pieceId = GetId(piece);
+    PieceType pieceType = GetType(piece);
 
-    //for castle:
-    int left = piece.isWhite ? 0 : (Board::WIDTH * Board::HEIGHT) - 8;
+    //Move the piece:
+    unsigned int* positions = pieceIsWhite ? whitePlayer.positions : blackPlayer.positions;
+    positions[pieceId] = startPosition;
+    board[startPosition] = piece;
+    board[endPosition] = stateLog.top().capturedPiece;
+
+    //castle directions:
+    int left = pieceIsWhite ? 0 : (Board::WIDTH * Board::HEIGHT) - 8;
     int right = left + 7;
 
-    //for capture:
-    switch (move.moveType)
+    switch (moveType)
     {
     case MoveType::NORMAL:
         break;
+
+    case MoveType::ADVANCED_PAWN:
+        break;
+
     case MoveType::ENPASSANT_LOWER:
-        board[move.startPosition - 1] = stateLog.top().capturedPieceEnpassant;
+        board[startPosition - 1] = stateLog.top().capturedPieceEnpassant;
         break;
     case MoveType::ENPASSANT_HIGHER:
-        board[move.startPosition + 1] = stateLog.top().capturedPieceEnpassant;
+        board[startPosition + 1] = stateLog.top().capturedPieceEnpassant;
         break;
     case MoveType::CASTLE_LOWER:
 
-    {
-        Piece rook = board[move.endPosition + 1];
-        positions[rook.id] = left;
-        board[left] = rook;
-        board[move.endPosition + 1] = 0;
-    }
+        {
+            Piece rook = board[endPosition + 1];
+            positions[GetId(rook)] = left;
+            board[left] = rook;
+            board[endPosition + 1] = 0u;
+        }
+
         break;
+
     case MoveType::CASTLE_HIGHER:
 
-    {
-        Piece rook = board[move.endPosition - 1];
-        positions[rook.id] = right;
-        board[right] = rook;
-        board[move.endPosition - 1] = 0;
-    }
-        break;
-    case MoveType::PROMOTE_QUEEN:
-    case MoveType::PROMOTE_ROOK:
-    case MoveType::PROMOTE_BISHOP:
-    case MoveType::PROMOTE_KNIGHT:
-        board[move.startPosition].type = PieceType::PAWN;
-        break;
-    }
+        {
+            Piece rook = board[endPosition - 1];
+            positions[GetId(rook)] = right;
+            board[right] = rook;
+            board[endPosition - 1] = 0u;
+        }
 
+        break;
+
+    case MoveType::PROMOTION:
+        SetType(board[endPosition], promoteType);
+        break;
+    }
 
     //shift turn
     isWhiteTurn = !isWhiteTurn;
@@ -168,31 +185,32 @@ bool GameState::IsInCheck()
 
 void GameState::GetAvalibleMoves(std::vector<Move>& moves, unsigned int position, Piece piece)
 {
-    switch (piece.type)
+    bool isWhite = IsWhite(piece);
+    switch (GetType(piece))
     {
     case PieceType::PAWN:
-        GetPawnMoves(moves, position, piece);
+        AddPawnMoves(isWhite, position, stateLog, board, moves);
         break;
 
     case PieceType::KNIGHT:
-        GetKnightMoves(moves, position, piece);
+        AddKnightMoves(isWhite, position, board, moves);
         break;
 
     case PieceType::BISHOP:
-        GetSlidingMoves(moves, position, piece, true);
+        AddBishopMoves(isWhite, position, board, moves);
         break;
 
     case PieceType::ROOK:
-        GetSlidingMoves(moves, position, piece, false);
+        AddRookMoves(isWhite, position, board, moves);
         break;
 
     case PieceType::QUEEN:
-        GetSlidingMoves(moves, position, piece, false);
-        GetSlidingMoves(moves, position, piece, true);
+        AddBishopMoves(isWhite, position, board, moves);
+        AddRookMoves(isWhite, position, board, moves);
         break;
 
     case PieceType::KING:
-        GetKingMoves(moves, position, piece);
+        AddKingMoves(isWhite, position, stateLog, board, moves);
         break;
     }
 }
@@ -201,47 +219,17 @@ void GameState::GetAvalibleMoves(std::vector<Move>& moves)
 {
     moves.reserve(20);
 
-    for (unsigned int y = 0; y < Board::HEIGHT; y++)
+    Player& player = isWhiteTurn ? whitePlayer : blackPlayer;
+
+    for (unsigned int i = 0; i < 16u; i++)
     {
-        for (unsigned int x = 0; x < Board::WIDTH; x++)
+        const Piece piece = board[player.positions[i]];
+        if (IsValid(piece) && IsWhite(piece) == isWhiteTurn && GetId(piece) == i)
         {
-            if (board.IsPieceAt(x, y) && board.At(x, y).isWhite == isWhiteTurn)
-            {
-                Piece piece = board.At(x, y);
-
-                switch (piece.type)
-                {
-                case PieceType::PAWN:
-                    GetPawnMoves(moves, (y << 3) + x, piece);
-                    break;
-
-                case PieceType::KNIGHT:
-                    GetKnightMoves(moves, (y << 3) + x, piece);
-                    break;
-
-                case PieceType::BISHOP:
-                    GetSlidingMoves(moves, (y << 3) + x, piece, true);
-                    break;
-
-                case PieceType::ROOK:
-                    GetSlidingMoves(moves, (y << 3) + x, piece, false);
-                    break;
-
-                case PieceType::QUEEN:
-                    GetSlidingMoves(moves, (y << 3) + x, piece, false);
-                    GetSlidingMoves(moves, (y << 3) + x, piece, true);
-                    break;
-
-                case PieceType::KING:
-                    GetKingMoves(moves, (y << 3) + x, piece);
-                    break;
-                }
-            }
+            GetAvalibleMoves(moves, player.positions[i], piece);
         }
     }
 }
-
-
 
 bool GameState::IsInCheck(bool white)
 {
@@ -251,14 +239,14 @@ bool GameState::IsInCheck(bool white)
     for (unsigned int i = 0; i < 16;i++)
     {
         int pos = opponent[i];
-        if (board[pos].Valid() && board[pos].id == i && board[pos].isWhite != white)
+        if (IsValid(board[pos]) && GetId(board[pos]) == i && IsWhite(board[pos]) != white)
         {
             std::vector<Move> moves;
             GetAvalibleMoves(moves, pos, board[pos]);
 
             for (auto& move : moves)
             {
-                if (move.endPosition == kingPos)
+                if (GetEndPos(move) == kingPos)
                 {
                     return true;
                 }
@@ -282,8 +270,8 @@ void GameState::SetUpPlayerPieces(bool white)
     //Place pieces down:
     for (unsigned int x = Board::MIN_COL_INDEX; x < Board::MAX_ROW_INDEX; x++)
     {
-        board.At(x, firstRow) = Piece(x,pieces[x], white);
-        board.At(x, secondRow) = Piece(x + 8,PieceType::PAWN, white);
+        board.At(x, firstRow) = CreatePiece(white, pieces[x],x);
+        board.At(x, secondRow) = CreatePiece(white, PieceType::PAWN, x + 8);
         positions[x] = (firstRow << 3) + x;
         positions[x + 8] = (secondRow << 3) + x;
     }
@@ -294,7 +282,6 @@ std::vector<Move> GameState::GetLegalMoves()
     std::vector<Move> moves;
     moves.reserve(20);
     GetAvalibleMoves(moves);
-
     
     for (unsigned int i = 0; i < moves.size();i++)
     {
@@ -309,7 +296,6 @@ std::vector<Move> GameState::GetLegalMoves()
 
         UnmakeMove();
     }
-    
 
     return moves;
 }
@@ -337,10 +323,11 @@ const std::vector<Move> GameState::GetLegalMoves(unsigned int x, unsigned int y)
 
     return moves;
 }
-
+/*
 void GameState::GetPawnMoves(std::vector<Move>& moves, unsigned int position, Piece pawn)
 {
-    int direction = pawn.isWhite ? 8 : -8;
+    bool isWhite = IsWhite(pawn);
+    int direction = isWhite ? 8 : -8;
     unsigned int forward = position + direction;
 
     bool rightInBounds = board.InBounds((forward & 7) + 1, forward >> 3);
@@ -350,9 +337,9 @@ void GameState::GetPawnMoves(std::vector<Move>& moves, unsigned int position, Pi
     {
         //Normal diagonal capture.
 
-        if (board[forward + 1] != 0 && board[forward + 1].isWhite != pawn.isWhite)
+        if (board[forward + 1] != 0 && IsWhite(board[forward + 1]) != isWhite)
         {
-            AddPawnMove(moves, Move(MoveType::NORMAL,position, forward + 1),pawn.isWhite);
+            AddPawnMove(moves, CreateMove(positions,forwa) Move(MoveType::NORMAL,position, forward + 1),isWhite);
         }
 
         //Enpassant
@@ -517,44 +504,227 @@ void GameState::GetKingMoves(std::vector<Move>& moves, unsigned int position, Pi
         moves.emplace_back(MoveType::CASTLE_HIGHER, position, position + 2);
     }
 }
+*/
 
-void GameState::AddPawnMove(std::vector<Move>& moves, const Move& move, bool isWhite)
+
+void GameState::AddPawnMoves(bool whitePiece, unsigned int position, const std::stack<TurnState>& stateLog, const Board& board, std::vector<Move>& moves)
 {
-    bool whitePromote = isWhite && (move.endPosition >> 3) == Board::MAX_ROW_INDEX - 1;
-    bool blackPromote = !isWhite && (move.endPosition >> 3) == Board::MIN_ROW_INDEX;
+    const unsigned int y = (position >> 3);
+    const unsigned int x = (position & 7);
+    unsigned int enPassantablePosition = stateLog.empty() ? NO_ENPASSANT : stateLog.top().enpassantPosition;
+    unsigned int promoteRow;
+    unsigned int advanceRow;
+    unsigned int direction;
 
-    if (whitePromote || blackPromote)
+    if (whitePiece)
     {
-        moves.emplace_back(MoveType::PROMOTE_QUEEN, move.startPosition, move.endPosition);
-        moves.emplace_back(MoveType::PROMOTE_ROOK, move.startPosition, move.endPosition);
-        moves.emplace_back(MoveType::PROMOTE_BISHOP, move.startPosition, move.endPosition);
-        moves.emplace_back(MoveType::PROMOTE_KNIGHT, move.startPosition, move.endPosition);
+        promoteRow = 7;
+        advanceRow = 1;
+        direction = 8;
+    }
+    else
+    {
+        promoteRow = 0;
+        advanceRow = 6;
+        direction = -8;
+    }
+
+    MoveType defaultType = (y + direction) != promoteRow ? MoveType::NORMAL : MoveType::PROMOTION;
+
+    //forward move:
+
+    if (board[position + direction] == 0)
+    {
+        AddPawnMove(moves, CreateMove(position, position + direction, defaultType, PieceType::NONE),whitePiece);
+
+        if (y == advanceRow && board[position + direction + direction] == 0)
+        {
+            moves.push_back(CreateMove(position, position + direction + direction, MoveType::ADVANCED_PAWN, PieceType::NONE));
+        }
+    }
+
+    //diagonal capture
+
+    if (x != 7)
+    {
+        if (board[position + direction + 1] != 0 && IsWhite(board[position + direction + 1]) != whitePiece)
+        {
+            AddPawnMove(moves, CreateMove(position, position + direction + 1, defaultType, GetType(board[position + direction + 1])), whitePiece);
+        }
+
+        if (position + 1 == enPassantablePosition && board[position + direction + 1] == 0 && IsWhite(board[position + 1]) != whitePiece)
+        {
+            moves.push_back(CreateMove(position, position + direction + 1, MoveType::ENPASSANT_HIGHER, PieceType::PAWN));
+        }
+    }
+
+    if (x != 0)
+    {
+        if (board[position + direction - 1] != 0 && IsWhite(board[position + direction - 1]) != whitePiece)
+        {
+            AddPawnMove(moves, CreateMove(position, position + direction - 1, defaultType, GetType(board[position + direction + 1])), whitePiece);
+        }
+
+        if (position - 1 == enPassantablePosition && board[position + direction - 1] == 0 && IsWhite(board[position - 1]) != whitePiece)
+        {
+            moves.push_back(CreateMove(position, position + direction - 1, MoveType::ENPASSANT_LOWER, PieceType::PAWN));
+        }
+    }
+}
+
+void GameState::AddKnightMoves(bool isWhite, unsigned int position, const Board& board, std::vector<Move>& moves)
+{
+    const unsigned int centerX = (position & 7);
+    const unsigned int centerY = (position >> 3);
+    unsigned int x;
+    unsigned int y;
+    unsigned int endPosition;
+
+    for (unsigned int i = 0; i < 8u; i++)
+    {
+        x = centerX + ((i & 1u) != 0u ? 2 : 1) * ((i & 2u) != 0u ? 1 : -1);
+        y = centerY + ((i & 1u) == 0u ? 2 : 1) * ((i & 4u) != 0u ? 1 : -1);
+        endPosition = ToIndex(x, y);
+
+        if (board.InBounds(x, y) && (board[endPosition] == 0 || IsWhite(board[endPosition]) != isWhite))
+        {
+            moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, GetType(board[endPosition])));
+        }
+    }
+}
+
+void GameState::AddBishopMoves(bool isWhite, unsigned int position, const Board& board, std::vector<Move>& moves)
+{
+    const unsigned int centerY = (position >> 3);
+    const unsigned int centerX = (position & 7);
+    int x, y;
+    int xDelta, yDelta;
+    unsigned int endPosition;
+
+    for (int i = 0; i < 4; i++)
+    {
+        yDelta = diagY[i];
+        xDelta = diagX[i];
+        x = centerX + xDelta;
+        y = centerY + yDelta;
+        endPosition = ToIndex(x, y);
+
+        while (board.InBounds(x, y))
+        {
+            if (board[endPosition] != 0)
+            {
+                if (IsWhite(board[endPosition]) != isWhite)
+                {
+                    moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, GetType(board[endPosition])));
+                }
+
+                break;
+            }
+
+            moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, PieceType::NONE));
+
+            x += xDelta;
+            y += yDelta;
+            endPosition = ToIndex(x, y);
+        }
+    }
+}
+
+void GameState::AddRookMoves(bool isWhite, unsigned int position, const Board& board, std::vector<Move>& moves)
+{
+    const unsigned int centerY = (position >> 3);
+    const unsigned int centerX = (position & 7);
+    int x, y;
+    int xDelta, yDelta;
+    unsigned int endPosition;
+
+    for (int i = 0; i < 4; i++)
+    {
+        yDelta = orthoY[i];
+        xDelta = orthoX[i];
+        x = centerX + xDelta;
+        y = centerY + yDelta;
+        endPosition = ToIndex(x, y);
+
+        while (board.InBounds(x, y))
+        {
+            if (board[endPosition] != 0)
+            {
+                if (IsWhite(board[endPosition]) != isWhite)
+                {
+                    moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, GetType(board[endPosition])));
+                }
+
+                break;
+            }
+
+            moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, PieceType::NONE));
+
+            x += xDelta;
+            y += yDelta;
+            endPosition = ToIndex(x, y);
+        }
+    }
+}
+
+void GameState::AddKingMoves(bool isWhite, unsigned int position, const std::stack<TurnState>& stateLog, const Board& board, std::vector<Move>& moves)
+{
+    const unsigned int centerY = (position >> 3);
+    const unsigned int centerX = (position & 7);
+
+    //1 step any direction:
+
+    for (int y = -1; y <= 1; y++)
+    {
+        for (int x = -1; x <= 1; x++)
+        {
+            unsigned int endPosition = ToIndex(centerX + x, centerY + y);
+
+            if (board.InBounds(centerX + x, centerY + y) && !(x == 0 && y == 0) && (board[endPosition] == 0 || IsWhite(board[endPosition]) != isWhite))
+            {
+                moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, GetType(board[endPosition])));
+            }
+        }
+    }
+
+
+    //castle:
+
+    bool leftLegal = true;
+    bool rightLegal = true;
+    unsigned int left = isWhite ? 0 : (Board::WIDTH * Board::HEIGHT) - 8;
+    unsigned int right = left + 7;
+
+    if (!stateLog.empty())
+    {
+        leftLegal = stateLog.top().GetCastlingLegal(isWhite, false);
+        rightLegal = stateLog.top().GetCastlingLegal(isWhite, true);
+    }
+
+    if (leftLegal && board[left] != 0 && GetType(board[left]) == PieceType::ROOK && IsWhite(board[left]) == isWhite && board[position - 1] == 0 && board[position - 2] == 0)
+    {
+        moves.push_back(CreateMove(position, position - 2, MoveType::CASTLE_LOWER, PieceType::NONE));
+    }
+
+    if (rightLegal && board[right] != 0 && GetType(board[right]) == PieceType::ROOK && IsWhite(board[right]) == isWhite && board[position + 1] == 0 && board[position + 2] == 0)
+    {
+        moves.push_back(CreateMove(position, position + 2, MoveType::CASTLE_HIGHER, PieceType::NONE));
+    }
+}
+
+
+void GameState::AddPawnMove(std::vector<Move>& moves, Move move, bool isWhite)
+{
+    if (GetMoveType(move) == MoveType::PROMOTION)
+    {
+        moves.emplace_back(SetPromoteMove(move, PieceType::KNIGHT));
+        moves.emplace_back(SetPromoteMove(move, PieceType::BISHOP));
+        moves.emplace_back(SetPromoteMove(move, PieceType::ROOK));
+        moves.emplace_back(SetPromoteMove(move, PieceType::QUEEN));
     }
     else 
     {
         moves.push_back(move);
-    }
-}
-
-void GameState::GetPins(std::vector<int>& pins)
-{
-    int kingPos = isWhiteTurn ? board[whitePlayer.positions[kingId]] : board[blackPlayer.positions[kingId]];
-
-    //orthogonal:
-
-    int x = (kingPos & 7) , y = (kingPos >> 3);
-
-    while (board.InBounds(x, y))
-    {
-        for (unsigned int i = 0; i < 4; i++)
-        {
-            const Piece& piece = board.C_At(x, y);
-            if (piece.Valid() && piece.isWhite != isWhiteTurn && (piece.type == PieceType::ROOK || piece.type == PieceType::QUEEN))
-            {
-                pins.push_back((y << 3) + x);
-                break;
-            }
-        }
     }
 }
 
@@ -584,7 +754,7 @@ void TurnState::SetCastlingIllegal(bool white, bool right)
     }
 }
 
-bool TurnState::GetCastlingLegal(bool white, bool right)
+bool TurnState::GetCastlingLegal(bool white, bool right) const
 {
     return castlingLegality[(white ? 0 : 2) + right];
 }

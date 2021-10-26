@@ -1,7 +1,6 @@
 #include <limits>
 #include <algorithm>
 #include "ChessPlayer.h"
-#include "GameState.h"
 //#include "Chess\Piece.h"
 
 //using namespace std;
@@ -9,10 +8,10 @@
 void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, GameState* gameState)
 {
 	*playerBlack = new ChessPlayer(gameState, false);
-	(*playerBlack)->SetAI(false,2);
+	(*playerBlack)->SetAI(false,3);
 
 	*playerWhite = new ChessPlayer(gameState,true);
-	(*playerWhite)->SetAI(false,3);
+	(*playerWhite)->SetAI(false,0);
 }
 
 ChessPlayer::ChessPlayer(GameState* _gameState, bool _isWhite)
@@ -41,10 +40,10 @@ unsigned int ChessPlayer::getAllLivePieces(vecPieces& vpieces)
 		{
 			Piece pPiece = board->At(j,i);
 
-			if (pPiece == 0)
-				continue;
-			if (pPiece.isWhite != isWhite)
-				continue;
+			//if (pPiece == 0)
+			//	continue;
+		//	if (pPiece.isWhite != isWhite)
+			//	continue;
 
 			count++;
 			pip.piece = pPiece;
@@ -165,24 +164,23 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta)
 
 bool ChessPlayer::PrioritiseMoveA(const Move& a, const Move& b) const
 {
-	//if (a.IsPromotion() || b.IsPromotion())
-	//{
-		//return (unsigned int)a.moveType < (unsigned int)b.moveType;
-	//}
+	PieceType aPromote = GetPromoteType(a);
+	PieceType bPromote = GetPromoteType(b);
 
-	Piece aPiece = board->C_Index(a.startPosition);
-	Piece bPiece = board->C_Index(b.startPosition);
-	Piece aCapture = a.IsEnPassant() ? Piece(8,PieceType::PAWN, !aPiece.isWhite) : board->C_Index(a.endPosition);
-	Piece bCapture = a.IsEnPassant() ? Piece(8,PieceType::PAWN, !bPiece.isWhite) : board->C_Index(b.endPosition);
-
-	if (aCapture.Valid() || bCapture.Valid())
+	if (aPromote != PieceType::NONE || bPromote != PieceType::NONE)
 	{
-		int aPow = aCapture.Valid() ? GetMaterial((PieceType)aCapture.type) - GetMaterial((PieceType)aPiece.type) : INT_MIN;
-		int bPow = bCapture.Valid() ? GetMaterial((PieceType)bCapture.type) - GetMaterial((PieceType)bPiece.type) : INT_MIN;
-		return aPow > bPow;
+		return GetScore(aPromote) > GetScore(bPromote);
 	}
 
-	return CenterDiff(a.endPosition) < CenterDiff(b.endPosition);
+	PieceType aCapture = GetCaptureType(a);
+	PieceType bCapture = GetCaptureType(b);
+
+	if (aCapture != PieceType::NONE || bCapture != PieceType::NONE)
+	{
+		return GetScore(aCapture) > GetScore(bCapture);
+	}
+
+	return CenterDiff(GetEndPos(a)) < CenterDiff(GetEndPos(b));
 }
 
 int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vector<Move>& moves)
@@ -191,7 +189,7 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 	{
 		if (gameState->IsInCheck())
 		{
-			return gameState->IsWhiteTurn() ? INT_MIN : INT_MAX;
+			return white ? INT_MIN : INT_MAX;
 		}
 		else
 		{
@@ -202,22 +200,24 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 	int score = 0;
 	unsigned int* whitePositions = gameState->GetWhitePositions();;
 	unsigned int* blackPositions = gameState->GetBlackPositions();;
-
+	
 	for (unsigned int i = 0; i < 16; i++)
 	{
 		unsigned int whitePosition = whitePositions[i];
-		if (board.C_Index(whitePosition).id == i && board.C_Index(whitePosition).isWhite)
+		Piece piece = board[whitePosition];
+		if (IsValid(piece) && IsWhite(piece) && GetId(piece) == i)
 		{
-			score += (GetMaterial((PieceType)board.C_Index(i).type) - CenterDiff(whitePosition));
+			score += (GetScore(piece) << 3) - CenterDiff(whitePosition);
 		}		
 	}
 
 	for (unsigned int i = 0; i < 16; i++)
 	{
 		unsigned int blackPosition = blackPositions[i];
-		if (board.C_Index(blackPosition).id == i && !board.C_Index(blackPosition).isWhite)
+		Piece piece = board[blackPosition];
+		if (IsValid(piece) && !IsWhite(piece) && GetId(piece) == i)
 		{
-			score -= (GetMaterial((PieceType)board.C_Index(i).type) - CenterDiff(blackPosition));
+			score -= (GetScore(piece) << 3) - CenterDiff(blackPosition);
 		}
 	}
 

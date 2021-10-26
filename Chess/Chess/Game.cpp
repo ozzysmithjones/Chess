@@ -28,9 +28,9 @@ void Game::Undo()
 bool Game::InterpretMove(Move& move, unsigned int positionStartX, unsigned int positionStartY, unsigned int positionEndX, unsigned int positionEndY)
 {
     std::vector<Move> moves = gameState->GetLegalMoves(positionStartX, positionStartY);
-    for (auto& m : moves)
+    for (const auto& m : moves)
     {
-        if (m.endPosition == ((positionEndY << 3) + positionEndX)) 
+        if (GetEndPos(m) == ((positionEndY << 3) + positionEndX)) 
         {
             move = m;
             return true;

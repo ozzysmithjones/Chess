@@ -1,14 +1,10 @@
 #pragma once
 #include <vector>
 #include <memory>
+#include "GameState.h"
 #include "Move.h"
 
 using namespace std;
-
-struct Piece;
-struct Board;
-struct Move;
-class GameState;
 
 struct PieceInPostion
 {
@@ -36,7 +32,7 @@ public:
 
 protected:
 
-	bool IsWhite() { return isWhite; }
+	bool IsWhitePlayer() { return isWhite; }
 	int MiniMax(int depth, bool white, int alpha, int beta);
 
 	virtual bool PrioritiseMoveA(const Move& a, const Move& b) const;

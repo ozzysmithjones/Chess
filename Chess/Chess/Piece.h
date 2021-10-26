@@ -1,38 +1,33 @@
 #pragma once
-const int pieceValues[6]{ 100, 330,340, 500, 900, 10000 };
+const unsigned int pieceScores[6] = { 1,3,3,5,9,15 };
 
-enum PieceType : unsigned int
+typedef unsigned int Piece;
+enum PieceMask : unsigned int
 {
-	PAWN = 1,
-	KNIGHT = 2,
-	BISHOP = 3,
-	ROOK = 4,
-	QUEEN = 5,
-	KING = 6
+	VALID =		0b00000000000000001,
+	WHITE =		0b00000000000000010,
+	TYPE =		0b00000000000011100,
+	ID =		0b00000000111100000,
+	SCORE =		0b00001111000000000,
 };
 
-static inline int GetMaterial(PieceType type) { return pieceValues[(unsigned int)type - 1]; }
-
-struct Piece
+enum class PieceType : unsigned int
 {
-	union
-	{
-		struct
-		{
-			unsigned int id : 4;
-			unsigned int isWhite : 1;
-			unsigned int type : 3;
-		};
-
-		unsigned char data;
-	};
-
-	operator unsigned char& () { return data; }
-
-	Piece();
-	Piece(unsigned char data);
-	Piece(unsigned int id, PieceType type, bool white);
-
-	bool Valid() const { return data != 0; }
+	NONE = 0u,
+	PAWN = 1u,
+	KNIGHT = 2u,
+	BISHOP = 3u,
+	ROOK = 4u,
+	QUEEN = 5u,
+	KING = 6u,
 };
 
+
+Piece CreatePiece(bool white, PieceType type, unsigned int id);
+inline bool IsValid(const Piece piece) { return piece & PieceMask::VALID; }
+inline bool IsWhite(const Piece piece) { return piece & PieceMask::WHITE; }
+inline PieceType GetType(const Piece piece) { return (PieceType)((piece & PieceMask::TYPE) >> 2); }
+inline unsigned int GetId(const Piece piece) { return (piece & PieceMask::ID) >> 5; }
+inline unsigned int GetScore(const Piece piece) { return (piece & PieceMask::SCORE) >> 9; }
+inline unsigned int GetScore(const PieceType piece) { return pieceScores[(unsigned int)piece]; }
+inline void SetType(Piece& piece, PieceType pieceType) { piece = (piece | ((unsigned int)pieceType << 2) | (pieceScores[(unsigned int)pieceType] << 9)); }

@@ -1,18 +1,5 @@
 #include "Piece.h"
-
-Piece::Piece()
+Piece CreatePiece(bool white, PieceType type, unsigned int id)
 {
-	data = 0;
-}
-
-Piece::Piece(unsigned char _data)
-{
-	data = _data;
-}
-
-Piece::Piece(unsigned int _id, PieceType _type, bool _white)
-{
-	id = _id;
-	type = (unsigned int)_type;
-	isWhite = _white;
+	return 1u | ((unsigned int)white << 1) | ((unsigned int)type << 2) | (id << 5) | (pieceScores[(unsigned int)type] << 9);
 }
