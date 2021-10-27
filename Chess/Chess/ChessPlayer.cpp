@@ -8,10 +8,10 @@
 void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, GameState* gameState)
 {
 	*playerBlack = new ChessPlayer(gameState, false);
-	(*playerBlack)->SetAI(false,3);
+	(*playerBlack)->SetAI(false,4);
 
 	*playerWhite = new ChessPlayer(gameState,true);
-	(*playerWhite)->SetAI(false,0);
+	(*playerWhite)->SetAI(false,3);
 }
 
 ChessPlayer::ChessPlayer(GameState* _gameState, bool _isWhite)
@@ -85,7 +85,7 @@ bool ChessPlayer::chooseAIMove(Move& moveToMake)
 	for (auto& move : moves)
 	{
 		gameState->MakeMove(move);
-		int score = MiniMax(depth, !isWhite, INT_MIN, INT_MAX) * (isWhite ? 1 : -1);
+		int score = MiniMax(depth, gameState->IsWhiteTurn(), INT_MIN, INT_MAX) * (isWhite ? 1 : -1);
 		gameState->UnmakeMove();
 
 		if (score > bestScore)

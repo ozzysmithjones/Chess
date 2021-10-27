@@ -503,7 +503,7 @@ void updateTurn(bool white)
     }
 }
 
-#define BOARD_ROTATION 0 //4
+#define BOARD_ROTATION 0;
 
 void doRotationBoard(bool white)
 {
@@ -516,7 +516,6 @@ void doRotationBoard(bool white)
         }
         else {
             board_rotating = false;
-
         }
     }
     else
@@ -527,7 +526,6 @@ void doRotationBoard(bool white)
         else {
             rotation = 0;
             board_rotating = false;
-
         }
     }
 }
@@ -844,6 +842,7 @@ void keyFunction(unsigned char key, int x, int y)
 
         case 'z':
 
+            endOfTurn();
             chess->Undo();
             break;
 		case 'c': case 'C':

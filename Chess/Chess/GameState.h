@@ -117,7 +117,7 @@ void OnPawnMoves(bool whitePiece, unsigned int position, const std::stack<TurnSt
 
     if (board[position + direction] == 0)
     {
-        moveFunc(position, position + direction + direction, defaultType, PieceType::NONE);
+        moveFunc(position, position + direction, defaultType, PieceType::NONE);
 
         if (y == advanceRow && board[position + direction + direction] == 0)
         {
@@ -134,7 +134,7 @@ void OnPawnMoves(bool whitePiece, unsigned int position, const std::stack<TurnSt
             moveFunc(position, position + direction + 1, defaultType, GetType(board[position + direction + 1]));
         }
 
-        if (board[position + 1] == enPassantablePosition && board[position + direction + 1] == 0 && IsWhite(board[position + 1]) != whitePiece)
+        if (position + 1 == enPassantablePosition && board[position + direction + 1] == 0 && IsWhite(board[position + 1]) != whitePiece)
         {
             moveFunc(position, position + direction + 1, MoveType::ENPASSANT_HIGHER, PieceType::PAWN);
         }
@@ -147,7 +147,7 @@ void OnPawnMoves(bool whitePiece, unsigned int position, const std::stack<TurnSt
             moveFunc(position, position + direction - 1, defaultType, GetType(board[position + direction + 1]));
         }
 
-        if (board[position - 1] == enPassantablePosition && board[position + direction - 1] == 0 && IsWhite(board[position - 1]) != whitePiece)
+        if (position - 1 == enPassantablePosition && board[position + direction - 1] == 0 && IsWhite(board[position - 1]) != whitePiece)
         {
             moveFunc(position, position + direction - 1, MoveType::ENPASSANT_LOWER, PieceType::PAWN);
         }
@@ -157,8 +157,8 @@ void OnPawnMoves(bool whitePiece, unsigned int position, const std::stack<TurnSt
 template<typename T>
 void OnKnightMoves(bool isWhite, unsigned int position, const Board& board, T moveFunc)
 {
-    const unsigned int centerX = (position >> 3);
-    const unsigned int centerY = (position & 7);
+    const unsigned int centerX = (position & 7);
+    const unsigned int centerY = (position >> 3);
     unsigned int x;
     unsigned int y;
     unsigned int endPosition;
@@ -169,7 +169,7 @@ void OnKnightMoves(bool isWhite, unsigned int position, const Board& board, T mo
         y = centerY + ((i & 1u) == 0u ? 2 : 1) * ((i & 4u) != 0u ? 1 : -1);
         endPosition = ToIndex(x, y);
 
-        if (board.InBounds(centerX + x, centerY + y) && (board[endPosition] == 0 || IsWhite(board[endPosition]) != isWhite))
+        if (board.InBounds(x, y) && (board[endPosition] == 0 || IsWhite(board[endPosition]) != isWhite))
         {
             moveFunc(position, endPosition, MoveType::NORMAL, GetType(board[endPosition]));
         }
