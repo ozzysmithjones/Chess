@@ -15,6 +15,7 @@ struct PieceInPostion
 
 typedef vector<PieceInPostion> vecPieces;
 
+int RowDiff(int position, int row);
 int CenterDiff(int position, bool maximise = true);
 int PosDiff(int position, int other);
 

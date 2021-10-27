@@ -31,7 +31,7 @@ private:
 struct Player
 {
 	unsigned int positions[16]{ 0 };
-	unsigned int influence[64]{ 0 };
+	unsigned int pressure[64]{ 0 };
 };
 
 class GameState
@@ -49,14 +49,13 @@ public:
 	void UnmakeMove();
 
 	bool IsInCheck();
+    bool IsInCheck(bool white);
 	inline bool IsWhiteTurn() const { return isWhiteTurn; }
 	std::vector<Move> GetLegalMoves();
 	const std::vector<Move> GetLegalMoves(unsigned int x, unsigned int y);
 
 private:
 
-	bool IsInCheck(bool white);
-	
 	void GetAvalibleMoves(std::vector<Move>& moves, unsigned int position, Piece piece);
 	void GetAvalibleMoves(std::vector<Move>& moves);
 

@@ -94,7 +94,7 @@ void GameState::MakeMove(const Move& move)
         break;
 
     case MoveType::PROMOTION:
-        SetType(board[endPosition], promoteType);
+        board[endPosition] = Promote(piece, promoteType);
         break;
     }
 
@@ -169,7 +169,7 @@ void GameState::UnmakeMove()
         break;
 
     case MoveType::PROMOTION:
-        SetType(board[endPosition], promoteType);
+        board[startPosition] = Promote(piece, PieceType::PAWN);
         break;
     }
 
@@ -231,8 +231,12 @@ void GameState::GetAvalibleMoves(std::vector<Move>& moves)
     }
 }
 
-bool GameState::IsInCheck(bool white)
+bool GameState::IsInCheck(bool isKingWhite)
 {
+    unsigned int kingPos = isKingWhite ? whitePlayer.positions[kingId] : blackPlayer.positions[kingId];
+    unsigned int kingX = (kingPos & 7);
+    unsigned int kingY = (kingPos >> 3);
+    /*
     unsigned int kingPos = white ? whitePlayer.positions[kingId] : blackPlayer.positions[kingId];
     unsigned int* opponent = white ? blackPlayer.positions : whitePlayer.positions;
 
@@ -253,7 +257,127 @@ bool GameState::IsInCheck(bool white)
             }
         }
     }
+    */
+
+    //Check orthogonal and diagonal moves;
+
+    unsigned int pos;
+    int x;
+    int y;
+
+    for (unsigned int i = 0; i < 4u; i++)
+    {
+        int xOffset = orthoX[i];
+        int yOffset = orthoY[i];
+        x = kingX + xOffset;
+        y = kingY + yOffset;
+
+        while (board.InBounds(x, y))
+        {
+            pos = ToIndex(x, y);
+            if (IsValid(board[pos]))
+            {
+                bool isPieceWhite = IsWhite(board[pos]);
+                PieceType type = GetType(board[pos]);
+
+                if ((isPieceWhite != isKingWhite) && (type == PieceType::ROOK || type == PieceType::QUEEN))
+                {
+                    return true;
+                }
+
+                break;
+            }
+
+            x += xOffset;
+            y += yOffset;
+        }
+
+        xOffset = diagX[i];
+        yOffset = diagY[i];
+        x = kingX + xOffset;
+        y = kingY + yOffset;
+
+        while (board.InBounds(x, y))
+        {
+            pos = ToIndex(x, y);
+
+            if (IsValid(board[pos]))
+            {
+                bool isPieceWhite = IsWhite(board[pos]);
+                PieceType type = GetType(board[pos]);
+
+                if ((isPieceWhite != isKingWhite) && (type == PieceType::BISHOP || type == PieceType::QUEEN))
+                {
+                    return true;
+                }
+
+                break;
+            }
+
+            x += xOffset;
+            y += yOffset;
+        }
+    }
     
+    //Check knight moves:
+
+    for (unsigned int i = 0; i < 8u; i++)
+    {
+        x = kingX + ((i & 1u) != 0u ? 2 : 1) * ((i & 2u) != 0u ? 1 : -1);
+        y = kingY + ((i & 1u) == 0u ? 2 : 1) * ((i & 4u) != 0u ? 1 : -1);
+        pos = ToIndex(x, y);
+
+        if (board.InBounds(x, y) && (IsValid(board[pos] && IsWhite(board[pos]) != isKingWhite && GetType(board[pos]) == PieceType::KNIGHT)))
+        {
+            return true;
+        }
+    }
+
+    //check pawn moves:
+
+    int pawnOffset = isKingWhite ? 1 : -1;
+
+    if (kingX != 0) // check left side for pawn
+    {
+        x = kingX - 1;
+        y = kingY + pawnOffset;
+        pos = ToIndex(x, y);
+
+        if (IsValid(board[pos]) && IsWhite(board[pos]) != isKingWhite && GetType(board[pos]) == PieceType::PAWN)
+        {
+            return true;
+        }
+    }
+
+    if (kingX != 7)
+    {
+        x = kingX + 1;
+        y = kingY + pawnOffset;
+        pos = ToIndex(x, y);
+
+        if (IsValid(board[pos]) && IsWhite(board[pos]) != isKingWhite && GetType(board[pos]) == PieceType::PAWN)
+        {
+            return true;
+        }
+    }
+
+    //check king moves:
+
+    for (int yi = -1; yi <= 1; yi++)
+    {
+        for (int xi = -1; xi <= 1; xi++)
+        {
+            x = kingX + xi;
+            y = kingY + yi;
+            pos = ToIndex(x, y);
+
+            if (board.InBounds(x, y) && IsWhite(board[pos]) != isKingWhite && GetType(board[pos]) == PieceType::KING)
+            {
+                return true;
+            }
+        }
+    }
+
     return false;
 }
 
@@ -285,6 +409,7 @@ std::vector<Move> GameState::GetLegalMoves()
     
     for (unsigned int i = 0; i < moves.size();i++)
     {
+        
         MakeMove(moves[i]);
 
         if (IsInCheck(!isWhiteTurn))
@@ -295,6 +420,7 @@ std::vector<Move> GameState::GetLegalMoves()
         }
 
         UnmakeMove();
+        
     }
 
     return moves;
@@ -308,6 +434,7 @@ const std::vector<Move> GameState::GetLegalMoves(unsigned int x, unsigned int y)
     
     for (unsigned int i = 0; i < moves.size(); i++)
     {
+        
         MakeMove(moves[i]);
 
         if (IsInCheck(!isWhiteTurn))
@@ -318,6 +445,7 @@ const std::vector<Move> GameState::GetLegalMoves(unsigned int x, unsigned int y)
         }
 
         UnmakeMove();
+        
     }
     
 
@@ -529,7 +657,7 @@ void GameState::AddPawnMoves(bool whitePiece, unsigned int position, const std::
         direction = -8;
     }
 
-    MoveType defaultType = (y + direction) != promoteRow ? MoveType::NORMAL : MoveType::PROMOTION;
+    MoveType defaultType = ((position + direction) >> 3) != promoteRow ? MoveType::NORMAL : MoveType::PROMOTION;
 
     //forward move:
 

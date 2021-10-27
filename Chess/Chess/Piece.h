@@ -29,5 +29,5 @@ inline bool IsWhite(const Piece piece) { return piece & PieceMask::WHITE; }
 inline PieceType GetType(const Piece piece) { return (PieceType)((piece & PieceMask::TYPE) >> 2); }
 inline unsigned int GetId(const Piece piece) { return (piece & PieceMask::ID) >> 5; }
 inline unsigned int GetScore(const Piece piece) { return (piece & PieceMask::SCORE) >> 9; }
-inline unsigned int GetScore(const PieceType piece) { return pieceScores[(unsigned int)piece]; }
-inline void SetType(Piece& piece, PieceType pieceType) { piece = (piece | ((unsigned int)pieceType << 2) | (pieceScores[(unsigned int)pieceType] << 9)); }
+inline unsigned int GetScore(const PieceType piece) { return pieceScores[(unsigned int)piece -1]; }
+inline Piece Promote(Piece piece, PieceType pieceType) { return ((piece & ~(PieceMask::TYPE | PieceMask::SCORE)) | ((unsigned int)pieceType << 2) | (pieceScores[(unsigned int)pieceType-1] << 9)); }

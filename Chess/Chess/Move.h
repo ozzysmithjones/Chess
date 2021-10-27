@@ -32,7 +32,7 @@ inline unsigned int GetEndPos(const Move move) { return (move & MoveMask::END_PO
 inline MoveType     GetMoveType(const Move move) { return (MoveType)((move & MoveMask::MOVE_TYPE) >> 12); }
 inline PieceType	GetCaptureType(const Move move) { return (PieceType)((move & MoveMask::CAPTURE_TYPE) >> 15); }
 inline PieceType	GetPromoteType(const Move move) { return (PieceType)((move & MoveMask::PROMOTE_TYPE) >> 18); }
-inline Move			SetPromoteMove(const Move move, PieceType pieceType) { return move | ((unsigned int)MoveType::PROMOTION << 12) | (unsigned int)pieceType << 18; }
+inline Move			SetPromoteMove(const Move move, PieceType pieceType) { return (move & ~(MoveMask::MOVE_TYPE | MoveMask::PROMOTE_TYPE))  | (((unsigned int)MoveType::PROMOTION << 12) | ((unsigned int)pieceType << 18)); }
 
 
 #pragma endregion Move

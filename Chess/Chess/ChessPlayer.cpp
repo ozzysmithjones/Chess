@@ -8,10 +8,10 @@
 void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, GameState* gameState)
 {
 	*playerBlack = new ChessPlayer(gameState, false);
-	(*playerBlack)->SetAI(false,4);
+	(*playerBlack)->SetAI(false,2);
 
 	*playerWhite = new ChessPlayer(gameState,true);
-	(*playerWhite)->SetAI(false,3);
+	(*playerWhite)->SetAI(false,2);
 }
 
 ChessPlayer::ChessPlayer(GameState* _gameState, bool _isWhite)
@@ -102,21 +102,9 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta)
 {
 	std::vector<Move> moves = gameState->GetLegalMoves();
 
-	/*
-	bool containsCapture = false;
-	for (auto& move : moves)
-	{
-		if (move.capturedPiece.data != 0)
-		{
-			containsCapture = true;
-			break;
-		}
-	}
-	*/
-
 	if ((depth <= 0) || moves.empty())
 	{
-		return EvaluatePosition(white, *board,moves);
+		return EvaluatePosition(white, *board, moves);
 	}
 
 	std::sort(moves.begin(), moves.end(), [this](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b); });
@@ -127,7 +115,8 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta)
 		for (auto move : moves)
 		{
 			gameState->MakeMove(move);
-			max = std::max(max,MiniMax(depth-1, false,alpha,beta));
+			int score = MiniMax(depth - 1, false, alpha, beta);
+			max = std::max(max, score);
 			gameState->UnmakeMove();
 
 			if (max >= beta)
@@ -147,7 +136,8 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta)
 		for (auto move : moves)
 		{
 			gameState->MakeMove(move);
-			min = std::min(min,MiniMax(depth-1, true,alpha,beta));
+			int score = MiniMax(depth - 1, true, alpha, beta);
+			min = std::min(min,score);
 			gameState->UnmakeMove();
 
 			if (min <= alpha)
@@ -187,7 +177,9 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 {
 	if (moves.empty())
 	{
-		if (gameState->IsInCheck())
+		//return white ? INT_MIN : INT_MAX;
+
+		if (gameState->IsInCheck(white))
 		{
 			return white ? INT_MIN : INT_MAX;
 		}
@@ -207,7 +199,22 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 		Piece piece = board[whitePosition];
 		if (IsValid(piece) && IsWhite(piece) && GetId(piece) == i)
 		{
-			score += (GetScore(piece) << 3) - CenterDiff(whitePosition);
+			score += (GetScore(piece) << 3);
+
+			switch (GetType(piece))
+			{
+			case PieceType::PAWN:
+				score -= RowDiff(whitePosition, 7);
+				break;
+			case PieceType::KING:
+				score += CenterDiff(whitePosition, false);
+				break;
+
+			default:
+				score -= CenterDiff(whitePosition);;
+				break;
+			}
+			
 		}		
 	}
 
@@ -217,11 +224,33 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 		Piece piece = board[blackPosition];
 		if (IsValid(piece) && !IsWhite(piece) && GetId(piece) == i)
 		{
-			score -= (GetScore(piece) << 3) - CenterDiff(blackPosition);
+			//score -= (GetScore(piece) << 3) - CenterDiff(blackPosition);
+
+			score -= (GetScore(piece) << 3);
+
+			switch (GetType(piece))
+			{
+			case PieceType::PAWN:
+				score += RowDiff(blackPosition, 0);
+				break;
+			case PieceType::KING:
+				score -= CenterDiff(blackPosition, false);
+				break;
+
+			default:
+				score += CenterDiff(blackPosition);;
+				break;
+			}
 		}
 	}
 
 	return score;
+}
+
+int RowDiff(int position, int row)
+{
+	int r = (position >> 3);
+	return abs(row - r);
 }
 
 int CenterDiff(int position, bool maximise)
