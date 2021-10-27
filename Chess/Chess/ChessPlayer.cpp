@@ -1,7 +1,6 @@
 #include <limits>
 #include <algorithm>
 #include "ChessPlayer.h"
-#include "GameState.h"
 //#include "Chess\Piece.h"
 
 //using namespace std;
@@ -9,15 +8,15 @@
 void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, GameState* gameState)
 {
 	*playerBlack = new ChessPlayer(gameState, false);
-	(*playerBlack)->SetAI(false,2);
+	(*playerBlack)->SetAI(false,4);
 
 	*playerWhite = new ChessPlayer(gameState,true);
-	(*playerWhite)->SetAI(false,2);
+	(*playerWhite)->SetAI(false,3);
 }
 
 ChessPlayer::ChessPlayer(GameState* _gameState, bool _isWhite)
 {
-	board = &_gameState->GetBoard();
+	board = &_gameState->GetBoardRef();
 	isWhite = _isWhite;
 	gameState = _gameState;
 }
@@ -41,10 +40,10 @@ unsigned int ChessPlayer::getAllLivePieces(vecPieces& vpieces)
 		{
 			Piece pPiece = board->At(j,i);
 
-			if (pPiece == 0)
-				continue;
-			if (pPiece.isWhite != isWhite)
-				continue;
+			//if (pPiece == 0)
+			//	continue;
+		//	if (pPiece.isWhite != isWhite)
+			//	continue;
 
 			count++;
 			pip.piece = pPiece;
@@ -79,17 +78,17 @@ bool ChessPlayer::chooseAIMove(Move& moveToMake)
 		return true;
 	}
 
-	std::sort(moves.begin(), moves.end(), &MovePriority);
+	std::sort(moves.begin(), moves.end(), [this](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b); });
 	moveToMake = moves[0];
 	int bestScore = INT_MIN;
 
 	for (auto& move : moves)
 	{
 		gameState->MakeMove(move);
-		int score = MiniMax(depth, !isWhite, INT_MIN, INT_MAX) * (isWhite ? 1 : -1);
+		int score = MiniMax(depth, gameState->IsWhiteTurn(), INT_MIN, INT_MAX) * (isWhite ? 1 : -1);
 		gameState->UnmakeMove();
 
-		if (score >= bestScore)
+		if (score > bestScore)
 		{
 			bestScore = score;
 			moveToMake = move;
@@ -120,22 +119,23 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta)
 		return EvaluatePosition(white, *board,moves);
 	}
 
-	std::sort(moves.begin(), moves.end(), &MovePriority);
+	std::sort(moves.begin(), moves.end(), [this](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b); });
 	if (white)
 	{
 		int max = INT_MIN;
 
-		for (auto& move : moves)
+		for (auto move : moves)
 		{
 			gameState->MakeMove(move);
 			max = std::max(max,MiniMax(depth-1, false,alpha,beta));
-			alpha = std::max(alpha, max);
 			gameState->UnmakeMove();
-			
-			if (beta <= alpha)
+
+			if (max >= beta)
 			{
 				break;
 			}
+
+			alpha = std::max(alpha, max);
 		}
 		
 		return max;
@@ -144,21 +144,43 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta)
 	{
 		int min = INT_MAX;
 
-		for (auto& move : moves)
+		for (auto move : moves)
 		{
 			gameState->MakeMove(move);
 			min = std::min(min,MiniMax(depth-1, true,alpha,beta));
-			beta = std::min(beta, min);
 			gameState->UnmakeMove();
 
-			if (beta <= alpha)
+			if (min <= alpha)
 			{
 				break;
 			}
+
+			beta = std::min(beta, min);
 		}
 
 		return min;
 	}
+}
+
+bool ChessPlayer::PrioritiseMoveA(const Move& a, const Move& b) const
+{
+	PieceType aPromote = GetPromoteType(a);
+	PieceType bPromote = GetPromoteType(b);
+
+	if (aPromote != PieceType::NONE || bPromote != PieceType::NONE)
+	{
+		return GetScore(aPromote) > GetScore(bPromote);
+	}
+
+	PieceType aCapture = GetCaptureType(a);
+	PieceType bCapture = GetCaptureType(b);
+
+	if (aCapture != PieceType::NONE || bCapture != PieceType::NONE)
+	{
+		return GetScore(aCapture) > GetScore(bCapture);
+	}
+
+	return CenterDiff(GetEndPos(a)) < CenterDiff(GetEndPos(b));
 }
 
 int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vector<Move>& moves)
@@ -174,72 +196,35 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 			return 0;
 		}
 	}
-	
-	/*
-	int whiteKingPos = -1;
-	int blackKingPos = -1;
-
-	for (unsigned int i = 0; i < 64u; i++)
-	{
-		if (board.C_Index(i).Valid() && board.C_Index(i).type == PieceType::KING)
-		{
-			if (board.C_Index(i).isWhite)
-			{
-				whiteKingPos = i;
-			}
-			else 
-			{
-				blackKingPos = i;
-			}
-
-			if (blackKingPos != -1 && whiteKingPos != -1)
-				break;
-		}
-	}
-	*/
 
 	int score = 0;
-	for (unsigned int i = 0; i < 64u; i++)
+	unsigned int* whitePositions = gameState->GetWhitePositions();;
+	unsigned int* blackPositions = gameState->GetBlackPositions();;
+	
+	for (unsigned int i = 0; i < 16; i++)
 	{
-		if (board.C_Index(i).Valid())
+		unsigned int whitePosition = whitePositions[i];
+		Piece piece = board[whitePosition];
+		if (IsValid(piece) && IsWhite(piece) && GetId(piece) == i)
 		{
-			const Piece& piece = board.C_Index(i);
-			int m = (piece.isWhite ? 1 : -1);
+			score += (GetScore(piece) << 3) - CenterDiff(whitePosition);
+		}		
+	}
 
-			if (piece.type != PieceType::KING)
-			{
-				score += (Piece::GetMaterialValue(piece.type) - CenterDiff(i)) * m ; //   * m;
-			}
-			else
-			{
-				score += (Piece::GetMaterialValue(piece.type) + CenterDiff(i)) * m;
-			}
+	for (unsigned int i = 0; i < 16; i++)
+	{
+		unsigned int blackPosition = blackPositions[i];
+		Piece piece = board[blackPosition];
+		if (IsValid(piece) && !IsWhite(piece) && GetId(piece) == i)
+		{
+			score -= (GetScore(piece) << 3) - CenterDiff(blackPosition);
 		}
 	}
 
 	return score;
 }
 
-bool MovePriority(const Move& a, const Move& b)
-{
-	if ((a.endPiece.type != a.startPiece.type) || (b.endPiece.type != b.startPiece.type))
-	{
-		int aPow = (int)(Piece::GetMaterialValue(a.endPiece.type) - Piece::GetMaterialValue(a.startPiece.type));
-		int bPow = (int)(Piece::GetMaterialValue(b.endPiece.type) - Piece::GetMaterialValue(b.startPiece.type));
-		return aPow > bPow;
-	}
-
-	if (a.capturedPiece.data != 0 || b.capturedPiece.data != 0)
-	{
-		int aPow = (int)(Piece::GetMaterialValue(a.capturedPiece.type) - Piece::GetMaterialValue(a.endPiece.type));
-		int bPow = (int)(Piece::GetMaterialValue(b.capturedPiece.type) - Piece::GetMaterialValue(b.endPiece.type));
-		return aPow > bPow;
-	}
-
-	return  CenterDiff(a.endPosition) < CenterDiff(b.endPosition);
-}
-
-int CenterDiff(int position)
+int CenterDiff(int position, bool maximise)
 {
 	unsigned int x = position & 7;
 	unsigned int y = position >> 3;
@@ -252,7 +237,7 @@ int CenterDiff(int position)
 	int xDiff = std::min(abs((int)(centerMinX - x)), abs((int)(centerMaxX - x)));
 	int yDiff = std::min(abs((int)(centerMinY - y)), abs((int)(centerMaxY - y)));
 
-	return std::max(xDiff, yDiff); //(xDiff * xDiff) + (yDiff * yDiff); ///std::max(xDiff, yDiff); //(xDiff * xDiff) + (yDiff * yDiff);
+	return maximise ? std::max(xDiff, yDiff) : std::min(xDiff, yDiff);//(xDiff * xDiff) + (yDiff * yDiff); ///std::max(xDiff, yDiff);
 }
 
 int PosDiff(int position, int other)

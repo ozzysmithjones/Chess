@@ -1,6 +1,8 @@
 #pragma once
 #include "Piece.h"
 
+inline unsigned int ToIndex(unsigned int x, unsigned int y) { return (y << 3) + x; }
+
 struct Board
 {
 public:
@@ -17,6 +19,7 @@ public:
 	inline Piece& At(unsigned int x, unsigned int y) { return grid[(y << 3) + x]; }
 	inline const Piece& C_At(unsigned int x, unsigned int y) const { return grid[(y << 3) + x]; }
 	inline Piece& operator[](unsigned int index) { return grid[index]; }
+	inline const Piece& operator[](unsigned int index) const { return grid[index]; }
 	inline const Piece& C_Index(unsigned int index) const { return grid[index]; }
 
 private:

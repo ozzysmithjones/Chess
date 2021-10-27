@@ -10,7 +10,7 @@ public:
 	~Game();
 
 	//For drawing and UI
-	Board& GetChessBoard() { return gameState->GetBoard(); }
+	const Board& GetChessBoard() { return gameState->GetBoard(); }
 	bool IsWhiteTurn() const { return gameState->IsWhiteTurn(); }
 	bool IsCheck() { return gameState->IsInCheck(); }
 	bool IsCheckMate() { return gameState->GetLegalMoves().empty(); }
@@ -26,8 +26,6 @@ public:
 	inline ChessPlayer* GetBlackPlayer() { return blackPlayer; }
 
 private:
-
-	void SetUpPlayerPieces(bool white);
 	GameState* gameState;
 	ChessPlayer* whitePlayer;
 	ChessPlayer* blackPlayer;
