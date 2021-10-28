@@ -8,10 +8,10 @@
 void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, GameState* gameState)
 {
 	*playerBlack = new ChessPlayer(gameState, false);
-	(*playerBlack)->SetAI(false,2);
+	(*playerBlack)->SetAI(false,4);
 
 	*playerWhite = new ChessPlayer(gameState,true);
-	(*playerWhite)->SetAI(false,2);
+	(*playerWhite)->SetAI(false,3);
 }
 
 ChessPlayer::ChessPlayer(GameState* _gameState, bool _isWhite)
@@ -80,15 +80,15 @@ bool ChessPlayer::chooseAIMove(Move& moveToMake)
 
 	std::sort(moves.begin(), moves.end(), [this](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b); });
 	moveToMake = moves[0];
-	int bestScore = INT_MIN;
+	int bestScore = isWhite ? INT_MIN : INT_MAX;
 
 	for (auto& move : moves)
 	{
 		gameState->MakeMove(move);
-		int score = MiniMax(depth, gameState->IsWhiteTurn(), INT_MIN, INT_MAX) * (isWhite ? 1 : -1);
+		int score = MiniMax(depth, gameState->IsWhiteTurn(), INT_MIN, INT_MAX);
 		gameState->UnmakeMove();
 
-		if (score > bestScore)
+		if ((score >= bestScore && isWhite) || (score <= bestScore && !isWhite))
 		{
 			bestScore = score;
 			moveToMake = move;
@@ -179,6 +179,7 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 	{
 		//return white ? INT_MIN : INT_MAX;
 
+		
 		if (gameState->IsInCheck(white))
 		{
 			return white ? INT_MIN : INT_MAX;
@@ -187,6 +188,7 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 		{
 			return 0;
 		}
+		
 	}
 
 	int score = 0;
@@ -199,7 +201,7 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 		Piece piece = board[whitePosition];
 		if (IsValid(piece) && IsWhite(piece) && GetId(piece) == i)
 		{
-			score += (GetScore(piece) << 3);
+			score += (GetScore(piece) << 4);
 
 			switch (GetType(piece))
 			{
@@ -226,7 +228,7 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 		{
 			//score -= (GetScore(piece) << 3) - CenterDiff(blackPosition);
 
-			score -= (GetScore(piece) << 3);
+			score -= (GetScore(piece) << 4);
 
 			switch (GetType(piece))
 			{
