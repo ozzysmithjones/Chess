@@ -50,6 +50,7 @@
       <Filter>Core Code</Filter>
     </ClInclude>
     <ClInclude Include="Chess\Game.h" />
+    <ClInclude Include="Chess\VectorStack.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="AI Code">

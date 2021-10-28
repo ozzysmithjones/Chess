@@ -26,7 +26,7 @@ enum class MoveType : unsigned int
 	PROMOTION = 6,
 };
 
-Move			CreateMove(unsigned int startPosition, unsigned int endPosition, MoveType moveType,PieceType captureType = PieceType::NONE, PieceType promoteType = PieceType::NONE);
+Move				CreateMove(unsigned int startPosition, unsigned int endPosition, MoveType moveType,PieceType captureType = PieceType::NONE, PieceType promoteType = PieceType::NONE);
 inline unsigned int GetStartPos(const Move move) { return move & MoveMask::START_POSITION; }
 inline unsigned int GetEndPos(const Move move) { return (move & MoveMask::END_POSITION) >> 6; }
 inline MoveType     GetMoveType(const Move move) { return (MoveType)((move & MoveMask::MOVE_TYPE) >> 12); }

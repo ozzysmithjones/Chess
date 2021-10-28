@@ -41,6 +41,7 @@ public:
 	GameState();
 
 	void SetUpPlayerPieces(bool white);
+    inline const std::stack<TurnState>& GetStateLog() const { return stateLog; }
 	inline const Board& GetBoard() const { return board; }
 	inline Board& GetBoardRef() { return board; }
 	inline unsigned int* GetWhitePositions() { return whitePlayer.positions; }
@@ -88,7 +89,7 @@ const int orthoY[4]{ 1,  0, -1, 0 };
 #pragma region Move Function templates 
 
 template<typename T>
-void OnPawnMoves(bool whitePiece, unsigned int position, const std::stack<TurnState>& stateLog, const Board& board, T moveFunc)
+void OnPawnMoves(bool whitePiece, unsigned int position, const std::stack<TurnState>& stateLog, const Board& board, const T& moveFunc)
 {
     const unsigned int y = (position >> 3);
     const unsigned int x = (position & 7);
@@ -153,8 +154,10 @@ void OnPawnMoves(bool whitePiece, unsigned int position, const std::stack<TurnSt
     }
 }
 
+
+
 template<typename T>
-void OnKnightMoves(bool isWhite, unsigned int position, const Board& board, T moveFunc)
+void OnKnightMoves(bool isWhite, unsigned int position, const Board& board, const T& moveFunc)
 {
     const unsigned int centerX = (position & 7);
     const unsigned int centerY = (position >> 3);
@@ -176,7 +179,7 @@ void OnKnightMoves(bool isWhite, unsigned int position, const Board& board, T mo
 }
 
 template<typename T>
-void OnBishopMoves(bool isWhite, unsigned int position, const Board& board, T moveFunc)
+void OnBishopMoves(bool isWhite, unsigned int position, const Board& board, const T& moveFunc)
 {
     const unsigned int centerY = (position >> 3);
     const unsigned int centerX = (position & 7);
@@ -214,7 +217,7 @@ void OnBishopMoves(bool isWhite, unsigned int position, const Board& board, T mo
 }
 
 template<typename T>
-void OnRookMoves(bool isWhite, unsigned int position, const Board& board, T moveFunc)
+void OnRookMoves(bool isWhite, unsigned int position, const Board& board, const T& moveFunc)
 {
     const unsigned int centerY = (position >> 3);
     const unsigned int centerX = (position & 7);
@@ -252,7 +255,7 @@ void OnRookMoves(bool isWhite, unsigned int position, const Board& board, T move
 }
 
 template<typename T>
-void OnKingMoves(bool isWhite, unsigned int position, const std::stack<TurnState>& stateLog, const Board& board, T moveFunc)
+void OnKingMoves(bool isWhite, unsigned int position, const std::stack<TurnState>& stateLog, const Board& board, const T& moveFunc)
 {
     const unsigned int centerY = (position >> 3);
     const unsigned int centerX = (position & 7);
@@ -296,6 +299,35 @@ void OnKingMoves(bool isWhite, unsigned int position, const std::stack<TurnState
     {
         moveFunc(position, position + 2, MoveType::CASTLE_HIGHER, PieceType::NONE);
     }
+}
+
+template<typename T>
+void OnPieceMoves(bool whitePiece, PieceType type, unsigned int position, const std::stack<TurnState>& stateLog, const Board& board, const T& moveFunc)
+{
+
+    switch (type)
+    {
+    case PieceType::PAWN:
+        OnPawnMoves<T>(whitePiece, position, stateLog, board, moveFunc);
+        break;
+    case PieceType::KNIGHT:
+        OnKnightMoves<T>(whitePiece, position, board, moveFunc);
+        break;
+    case PieceType::BISHOP:
+        OnBishopMoves<T>(whitePiece, position, board, moveFunc);
+        break;
+    case PieceType::ROOK:
+        OnRookMoves<T>(whitePiece, position, board, moveFunc);
+        break;
+    case PieceType::QUEEN:
+        OnBishopMoves<T>(whitePiece, position, board, moveFunc);
+        OnRookMoves<T>(whitePiece, position, board, moveFunc);
+        break;
+    case PieceType::KING:
+        OnKingMoves<T>(whitePiece, position, stateLog, board, moveFunc);
+        break;
+    }
+
 }
 
 #pragma endregion

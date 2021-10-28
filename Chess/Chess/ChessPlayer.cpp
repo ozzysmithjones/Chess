@@ -8,7 +8,7 @@
 void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, GameState* gameState)
 {
 	*playerBlack = new ChessPlayer(gameState, false);
-	(*playerBlack)->SetAI(false,4);
+	(*playerBlack)->SetAI(false,3);
 
 	*playerWhite = new ChessPlayer(gameState,true);
 	(*playerWhite)->SetAI(false,3);
@@ -178,7 +178,6 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 	if (moves.empty())
 	{
 		//return white ? INT_MIN : INT_MAX;
-
 		
 		if (gameState->IsInCheck(white))
 		{
@@ -190,6 +189,7 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 		}
 		
 	}
+
 
 	int score = 0;
 	unsigned int* whitePositions = gameState->GetWhitePositions();;
@@ -216,7 +216,11 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 				score -= CenterDiff(whitePosition);;
 				break;
 			}
-			
+
+			OnPieceMoves(true, GetType(piece), whitePosition, gameState->GetStateLog(), board, [&score](unsigned int startPosition, unsigned int endPosition, MoveType moveType, PieceType capturedType)
+				{
+					score += capturedType != PieceType::NONE ? 10 : 1;
+				});
 		}		
 	}
 
@@ -243,8 +247,15 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 				score += CenterDiff(blackPosition);;
 				break;
 			}
+
+			OnPieceMoves(false, GetType(piece), blackPosition, gameState->GetStateLog(), board, [&score](unsigned int startPosition, unsigned int endPosition, MoveType moveType, PieceType capturedType)
+				{
+					score -= capturedType != PieceType::NONE ? (GetScore(capturedType) << 1) : 1;
+				});
 		}
 	}
+
+
 
 	return score;
 }

@@ -217,9 +217,25 @@ void GameState::GetAvalibleMoves(std::vector<Move>& moves, unsigned int position
 
 void GameState::GetAvalibleMoves(std::vector<Move>& moves)
 {
-    moves.reserve(20);
-
     Player& player = isWhiteTurn ? whitePlayer : blackPlayer;
+
+    //reserve moves:
+    unsigned int count = 0;
+    for (unsigned int i = 0; i < 16u; i++)
+    {
+        
+        unsigned int position = player.positions[i];
+        const Piece piece = board[position];
+        bool isWhite = IsWhite(piece);
+
+        if (IsValid(piece) && isWhite == isWhiteTurn && GetId(piece) == i)
+        {
+            OnPieceMoves(isWhite, GetType(piece), position, stateLog, board, [&count](unsigned int startPos, unsigned int endPos, MoveType moveType, PieceType captureType) {  count++; });
+        }
+    }
+
+    moves.reserve(count);
+   
 
     for (unsigned int i = 0; i < 16u; i++)
     {
@@ -404,12 +420,10 @@ void GameState::SetUpPlayerPieces(bool white)
 std::vector<Move> GameState::GetLegalMoves()
 {
     std::vector<Move> moves;
-    moves.reserve(20);
     GetAvalibleMoves(moves);
     
     for (unsigned int i = 0; i < moves.size();i++)
     {
-        
         MakeMove(moves[i]);
 
         if (IsInCheck(!isWhiteTurn))
@@ -420,7 +434,6 @@ std::vector<Move> GameState::GetLegalMoves()
         }
 
         UnmakeMove();
-        
     }
 
     return moves;

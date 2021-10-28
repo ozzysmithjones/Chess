@@ -184,6 +184,7 @@
     <ClInclude Include="Chess\ChessPlayer.h" />
     <ClInclude Include="Chess\GameState.h" />
     <ClInclude Include="Chess\Game.h" />
+    <ClInclude Include="Chess\VectorStack.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="Chess\Move.h" />
     <ClInclude Include="Chess\Piece.h" />
