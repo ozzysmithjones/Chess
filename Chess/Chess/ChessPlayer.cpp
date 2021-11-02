@@ -219,7 +219,7 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 
 			OnPieceMoves(true, GetType(piece), whitePosition, gameState->GetStateLog(), board, [&score](unsigned int startPosition, unsigned int endPosition, MoveType moveType, PieceType capturedType)
 				{
-					score += capturedType != PieceType::NONE ? 10 : 1;
+					score += capturedType != PieceType::NONE ? (GetScore(capturedType) << 1) : 1;
 				});
 		}		
 	}
