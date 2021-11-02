@@ -77,7 +77,10 @@ private:
 	void AddRookMoves(bool isWhite, unsigned int position, const Board& board, std::vector<Move>& moves);
 	void AddKingMoves(bool isWhite, unsigned int position, const std::stack<TurnState>& stateLog, const Board& board, std::vector<Move>& moves);
     
+    bool MoveDeliversCheck(bool isWhite, unsigned int position, PieceType pieceType);
 
+    static bool OrthogonalTo(unsigned int position, unsigned int target);
+    static bool DiagonalTo(unsigned int position, unsigned int target);
 	static void AddPawnMove(std::vector<Move>& moves, Move pawnMove, bool isWhite);
 };
 

@@ -443,7 +443,6 @@ const std::vector<Move> GameState::GetLegalMoves(unsigned int x, unsigned int y)
 {
     std::vector<Move> moves;
     GetAvalibleMoves(moves, (y << 3) + x, board[(y << 3) + x]);
-
     
     for (unsigned int i = 0; i < moves.size(); i++)
     {
@@ -761,9 +760,7 @@ void GameState::AddBishopMoves(bool isWhite, unsigned int position, const Board&
 
                 break;
             }
-
             moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, PieceType::NONE));
-
             x += xDelta;
             y += yDelta;
             endPosition = ToIndex(x, y);
@@ -851,6 +848,42 @@ void GameState::AddKingMoves(bool isWhite, unsigned int position, const std::sta
     {
         moves.push_back(CreateMove(position, position + 2, MoveType::CASTLE_HIGHER, PieceType::NONE));
     }
+}
+
+bool GameState::MoveDeliversCheck(bool isWhite, unsigned int position, PieceType pieceType)
+{
+    unsigned int kingPos = isWhite ? blackPlayer.positions[kingId] : whitePlayer.positions[kingId];
+    unsigned int kingX = (kingPos & 7);
+    unsigned int kingY = (kingPos >> 3);
+
+    if ((pieceType == PieceType::ROOK || pieceType == PieceType::QUEEN) && OrthogonalTo(position, kingPos))
+    {
+
+    }
+
+    if ((pieceType == PieceType::BISHOP || pieceType == PieceType::QUEEN) && DiagonalTo(position, kingPos))
+    {
+
+    }
+
+
+
+    return false;
+}
+
+bool GameState::OrthogonalTo(unsigned int position, unsigned int target)
+{
+    return ((position & 7) == (target & 7)) || ((position >> 3) == (target >> 3));
+}
+
+bool GameState::DiagonalTo(unsigned int position, unsigned int target)
+{
+    const int x0 = position & 7;
+    const int y0 = position >> 3;
+    const int x1 = target & 7;
+    const int y1 = target >> 3;
+
+    return (abs(x1 - x0) ==  abs(y1 - y0));
 }
 
 
