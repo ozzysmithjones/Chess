@@ -11,7 +11,7 @@ void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBl
 	(*playerBlack)->SetAI(false,3);
 
 	*playerWhite = new ChessPlayer(gameState,true);
-	(*playerWhite)->SetAI(false,3);
+	(*playerWhite)->SetAI(false,1);
 }
 
 ChessPlayer::ChessPlayer(GameState* _gameState, bool _isWhite)
@@ -190,72 +190,46 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 		
 	}
 
+	return EvaluateSide(true, board) - EvaluateSide(false, board);
+}
 
+int ChessPlayer::EvaluateSide(bool white, const Board& board)
+{
 	int score = 0;
-	unsigned int* whitePositions = gameState->GetWhitePositions();;
-	unsigned int* blackPositions = gameState->GetBlackPositions();;
-	
+	const unsigned int* positions = white ? gameState->GetWhitePositions() : gameState->GetBlackPositions();
+	const unsigned int promoteRow = white ? 7 : 0;
+
 	for (unsigned int i = 0; i < 16; i++)
 	{
-		unsigned int whitePosition = whitePositions[i];
-		Piece piece = board[whitePosition];
-		if (IsValid(piece) && IsWhite(piece) && GetId(piece) == i)
+		unsigned int position = positions[i];
+		Piece piece = board[position];
+		if (IsValid(piece) && IsWhite(piece) == white && GetId(piece) == i)
 		{
 			score += (GetScore(piece) << 4);
 
 			switch (GetType(piece))
 			{
 			case PieceType::PAWN:
-				score -= RowDiff(whitePosition, 7);
+				score -= (RowDiff(position, promoteRow)) >> 1;
 				break;
 			case PieceType::KING:
-				score += CenterDiff(whitePosition, false);
+				score += CenterDiff(position, false);
 				break;
 
 			default:
-				score -= CenterDiff(whitePosition);;
+				score -= CenterDiff(position);
 				break;
 			}
 
-			OnPieceMoves(true, GetType(piece), whitePosition, gameState->GetStateLog(), board, [&score](unsigned int startPosition, unsigned int endPosition, MoveType moveType, PieceType capturedType)
+			/*
+			OnPieceMoves(white, GetType(piece), position, gameState->GetStateLog(), board, [&score](unsigned int startPosition, unsigned int endPosition, MoveType moveType, PieceType capturedType)
 				{
-					score += capturedType != PieceType::NONE ? (GetScore(capturedType) << 1) : 1;
+					score += capturedType != PieceType::NONE ? GetScore(capturedType) : 0;
 				});
-		}		
-	}
-
-	for (unsigned int i = 0; i < 16; i++)
-	{
-		unsigned int blackPosition = blackPositions[i];
-		Piece piece = board[blackPosition];
-		if (IsValid(piece) && !IsWhite(piece) && GetId(piece) == i)
-		{
-			//score -= (GetScore(piece) << 3) - CenterDiff(blackPosition);
-
-			score -= (GetScore(piece) << 4);
-
-			switch (GetType(piece))
-			{
-			case PieceType::PAWN:
-				score += RowDiff(blackPosition, 0);
-				break;
-			case PieceType::KING:
-				score -= CenterDiff(blackPosition, false);
-				break;
-
-			default:
-				score += CenterDiff(blackPosition);;
-				break;
-			}
-
-			OnPieceMoves(false, GetType(piece), blackPosition, gameState->GetStateLog(), board, [&score](unsigned int startPosition, unsigned int endPosition, MoveType moveType, PieceType capturedType)
-				{
-					score -= capturedType != PieceType::NONE ? (GetScore(capturedType) << 1) : 1;
-				});
+				*/
+				
 		}
 	}
-
-
 
 	return score;
 }

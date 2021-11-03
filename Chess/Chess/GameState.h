@@ -8,7 +8,6 @@
 const unsigned int NO_ENPASSANT = 255u;
 
 class GameState;
-typedef void(GameState::* MoveFunc)(unsigned int startPosition, unsigned int endPosition, MoveType moveType, PieceType capturedType);
 
 struct TurnState
 {

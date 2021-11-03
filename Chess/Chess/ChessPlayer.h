@@ -37,8 +37,8 @@ protected:
 	int MiniMax(int depth, bool white, int alpha, int beta);
 
 	virtual bool PrioritiseMoveA(const Move& a, const Move& b) const;
-	virtual int EvaluatePosition(bool white, const Board& board, const std::vector<Move>& moves);
-
+	int EvaluatePosition(bool white, const Board& board, const std::vector<Move>& moves);
+	virtual int EvaluateSide(bool white, const Board& board);
 
 private:
 
