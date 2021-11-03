@@ -110,17 +110,17 @@ void GameState::UnmakeMove()
     moveLog.pop();
 
     //Get move variables: (they are compressed into an integer for space efficiency)
-    unsigned int startPosition = GetStartPos(move);
-    unsigned int endPosition = GetEndPos(move);
-    MoveType moveType = GetMoveType(move);
-    PieceType captureType = GetCaptureType(move);
-    PieceType promoteType = GetPromoteType(move);
+    unsigned int startPosition  = GetStartPos(move);
+    unsigned int endPosition    = GetEndPos(move);
+    MoveType moveType           = GetMoveType(move);
+    PieceType captureType       = GetCaptureType(move);
+    PieceType promoteType       = GetPromoteType(move);
 
     //get piece variables: (they are compressed into an integer for space efficiency)
-    Piece piece = board[endPosition];
-    bool pieceIsWhite = IsWhite(piece);
-    unsigned int pieceId = GetId(piece);
-    PieceType pieceType = GetType(piece);
+    Piece piece                 = board[endPosition];
+    bool pieceIsWhite           = IsWhite(piece);
+    unsigned int pieceId        = GetId(piece);
+    PieceType pieceType         = GetType(piece);
 
     //Move the piece:
     unsigned int* positions = pieceIsWhite ? whitePlayer.positions : blackPlayer.positions;
