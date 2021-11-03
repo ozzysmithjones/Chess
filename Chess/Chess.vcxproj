@@ -173,6 +173,7 @@
     <ClCompile Include="Chess\ChessPlayer.cpp" />
     <ClCompile Include="Chess\GameState.cpp" />
     <ClCompile Include="Chess\Game.cpp" />
+    <ClCompile Include="Chess\KillerMoveTable.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="Chess\Move.cpp" />
@@ -185,6 +186,7 @@
     <ClInclude Include="Chess\GameState.h" />
     <ClInclude Include="Chess\Game.h" />
     <ClInclude Include="Chess\VectorStack.h" />
+    <ClInclude Include="Chess\KillerMoveTable.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="Chess\Move.h" />
     <ClInclude Include="Chess\Piece.h" />

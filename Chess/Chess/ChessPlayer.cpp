@@ -8,10 +8,10 @@
 void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, GameState* gameState)
 {
 	*playerBlack = new ChessPlayer(gameState, false);
-	(*playerBlack)->SetAI(false,3);
+	(*playerBlack)->SetAI(false,4);
 
 	*playerWhite = new ChessPlayer(gameState,true);
-	(*playerWhite)->SetAI(false,1);
+	(*playerWhite)->SetAI(false,4);
 }
 
 ChessPlayer::ChessPlayer(GameState* _gameState, bool _isWhite)
@@ -78,14 +78,15 @@ bool ChessPlayer::chooseAIMove(Move& moveToMake)
 		return true;
 	}
 
-	std::sort(moves.begin(), moves.end(), [this](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b); });
+	KillerMoveTable killerMoveTable;
+	std::sort(moves.begin(), moves.end(), [this](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b,nullptr,0); });
 	moveToMake = moves[0];
 	int bestScore = isWhite ? INT_MIN : INT_MAX;
 
 	for (auto& move : moves)
 	{
 		gameState->MakeMove(move);
-		int score = MiniMax(depth, gameState->IsWhiteTurn(), INT_MIN, INT_MAX);
+		int score = MiniMax(depth, gameState->IsWhiteTurn(), INT_MIN, INT_MAX, killerMoveTable);
 		gameState->UnmakeMove();
 
 		if ((score >= bestScore && isWhite) || (score <= bestScore && !isWhite))
@@ -98,7 +99,7 @@ bool ChessPlayer::chooseAIMove(Move& moveToMake)
 	return true;
 }
 
-int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta)
+int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta, KillerMoveTable& killerMoveTable)
 {
 	std::vector<Move> moves = gameState->GetLegalMoves();
 
@@ -107,7 +108,10 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta)
 		return EvaluatePosition(white, *board, moves);
 	}
 
-	std::sort(moves.begin(), moves.end(), [this](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b); });
+	size_t numKillerMoves;
+	const Move* killerMoves = killerMoveTable.GetKillerMoves(depth, numKillerMoves);
+	std::sort(moves.begin(), moves.end(), [this, killerMoves, numKillerMoves](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b,killerMoves,numKillerMoves); });
+
 	if (white)
 	{
 		int max = INT_MIN;
@@ -115,12 +119,13 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta)
 		for (auto move : moves)
 		{
 			gameState->MakeMove(move);
-			int score = MiniMax(depth - 1, false, alpha, beta);
+			int score = MiniMax(depth - 1, false, alpha, beta, killerMoveTable);
 			max = std::max(max, score);
 			gameState->UnmakeMove();
 
 			if (max >= beta)
 			{
+				killerMoveTable.Push_front(depth, move);
 				break;
 			}
 
@@ -136,12 +141,13 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta)
 		for (auto move : moves)
 		{
 			gameState->MakeMove(move);
-			int score = MiniMax(depth - 1, true, alpha, beta);
+			int score = MiniMax(depth - 1, true, alpha, beta, killerMoveTable);
 			min = std::min(min,score);
 			gameState->UnmakeMove();
 
 			if (min <= alpha)
 			{
+				killerMoveTable.Push_front(depth, move);
 				break;
 			}
 
@@ -152,8 +158,21 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta)
 	}
 }
 
-bool ChessPlayer::PrioritiseMoveA(const Move& a, const Move& b) const
+bool ChessPlayer::PrioritiseMoveA(const Move& a, const Move& b, const Move* killerMoves, const size_t numKillerMoves) const
 {
+	//Prioritise "killer moves" that caused a beta cut-off.
+	for (size_t i = 0; i < numKillerMoves; i++)
+	{
+		if (killerMoves[i] == a)
+		{
+			return true;
+		}
+		else if (killerMoves[i] == b)
+		{
+			return false;
+		}
+	}
+
 	PieceType aPromote = GetPromoteType(a);
 	PieceType bPromote = GetPromoteType(b);
 

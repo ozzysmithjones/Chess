@@ -26,6 +26,7 @@
       <Filter>Core Code</Filter>
     </ClCompile>
     <ClCompile Include="Chess\Game.cpp" />
+    <ClCompile Include="Chess\KillerMoveTable.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Chess\ChessPlayer.h">
@@ -51,6 +52,7 @@
     </ClInclude>
     <ClInclude Include="Chess\Game.h" />
     <ClInclude Include="Chess\VectorStack.h" />
+    <ClInclude Include="Chess\KillerMoveTable.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="AI Code">

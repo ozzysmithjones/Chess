@@ -3,6 +3,7 @@
 #include <memory>
 #include "GameState.h"
 #include "Move.h"
+#include "KillerMoveTable.h"
 
 using namespace std;
 
@@ -34,19 +35,19 @@ public:
 protected:
 
 	bool IsWhitePlayer() { return isWhite; }
-	int MiniMax(int depth, bool white, int alpha, int beta);
+	int MiniMax(int depth, bool white, int alpha, int beta, KillerMoveTable& killerMoveTable);
 
-	virtual bool PrioritiseMoveA(const Move& a, const Move& b) const;
+	virtual bool PrioritiseMoveA(const Move& a, const Move& b, const Move* killerMoves, const size_t numKillerMoves) const;
 	int EvaluatePosition(bool white, const Board& board, const std::vector<Move>& moves);
 	virtual int EvaluateSide(bool white, const Board& board);
 
 private:
 
-	int			depth;
-	bool		random = false;
-	bool		isWhite;
-	bool		isAI;
-	Board*		board;
-	GameState* gameState;
+	int				depth;
+	bool			random = false;
+	bool			isWhite;
+	bool			isAI;
+	Board*			board;
+	GameState*		gameState;
 };
 
