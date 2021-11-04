@@ -45,7 +45,7 @@ uint64_t ZobristHasher::HashForPosition(bool isWhiteTurn, const Board& board, co
 
         if (isWhite && IsValid(board[pos]) && GetId(board[pos]) == i)
         {
-            hash = hash ^ pieceSeeds[(unsigned int)GetType(board[pos])  * 64 + pos];
+            hash = hash ^ pieceSeeds[((unsigned int)GetType(board[pos])-1)  * 64 + pos];
         }
 
         pos = blackPlayerPositions[i];
@@ -53,7 +53,7 @@ uint64_t ZobristHasher::HashForPosition(bool isWhiteTurn, const Board& board, co
 
         if (!isWhite && IsValid(board[pos]) && GetId(board[pos]) == i)
         {
-            hash = hash ^ pieceSeeds[((unsigned int)GetType(board[pos]) + 6) * 64 + pos];
+            hash = hash ^ pieceSeeds[((unsigned int)GetType(board[pos]) + 5) * 64 + pos];
         }
     }
 
@@ -63,6 +63,11 @@ uint64_t ZobristHasher::HashForPosition(bool isWhiteTurn, const Board& board, co
         {
             hash = hash ^ castleSeeds[i];
         }
+    }
+
+    if (turnState.enpassantPosition != 255)
+    {
+        hash = hash ^ HashForEnpassant(turnState.enpassantPosition >> 3);
     }
 
     if (!isWhiteTurn)
@@ -75,7 +80,7 @@ uint64_t ZobristHasher::HashForPosition(bool isWhiteTurn, const Board& board, co
 
 uint64_t ZobristHasher::HashForPiece(bool isWhite, PieceType pieceType, unsigned int position)
 {
-    return pieceSeeds[((isWhite ? 0u : 6u) + (unsigned int)pieceType) * 64 + position];
+    return pieceSeeds[((isWhite ? 0u : 6u) + ((unsigned int)pieceType-1)) * 64 + position];
 }
 
 uint64_t ZobristHasher::HashForEnpassant(unsigned int row)

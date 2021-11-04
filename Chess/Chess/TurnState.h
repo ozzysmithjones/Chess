@@ -1,9 +1,10 @@
 #pragma once
+#include <stdint.h>
 #include "Piece.h"
 
 struct TurnState
 {
-	bool preventedCastling;
+	uint64_t zob;
 	unsigned int enpassantPosition;
 	Piece capturedPiece;
 	Piece capturedPieceEnpassant;

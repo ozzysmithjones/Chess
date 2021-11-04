@@ -25,7 +25,10 @@ public:
 	inline ChessPlayer* GetWhitePlayer() { return whitePlayer; }
 	inline ChessPlayer* GetBlackPlayer() { return blackPlayer; }
 
+	GameState* GetGameState() { return gameState; }
+
 private:
+
 	GameState* gameState;
 	ChessPlayer* whitePlayer;
 	ChessPlayer* blackPlayer;

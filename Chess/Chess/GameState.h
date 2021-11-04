@@ -33,6 +33,7 @@ public:
 	void MakeMove(const Move& move);
 	void UnmakeMove();
     inline uint64_t GetPositionZobristKey() const { return zobristKey; }
+    uint64_t CalculateZobristKey() const;
 
 	bool IsInCheck();
     bool IsInCheck(bool white);

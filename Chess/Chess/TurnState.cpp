@@ -2,8 +2,6 @@
 
 void TurnState::SetCastlingIllegal(bool white)
 {
-    preventedCastling = true;
-
     if (white)
     {
         castlingLegality[0] = false;
@@ -18,8 +16,6 @@ void TurnState::SetCastlingIllegal(bool white)
 
 void TurnState::SetCastlingIllegal(bool white, bool right)
 {
-    preventedCastling = true;
-
     if (white)
     {
         castlingLegality[right] = false;

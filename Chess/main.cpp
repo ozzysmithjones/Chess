@@ -646,7 +646,11 @@ void displayFunction()
 
 			drawValidMoves();
 
-            //showWord(-300, WINDOW_HEIGHT / 2 - 24, "Material advantage: ");
+            std::string t = "Zobrist is" + std::to_string(chess->GetGameState()->GetPositionZobristKey());
+            showWord(-300, WINDOW_HEIGHT / 2 - 24, t);
+
+            t = "Zobrist is supposed to be " + std::to_string(chess->GetGameState()->CalculateZobristKey());
+            showWord(-300, WINDOW_HEIGHT / 2 - 48, t);
 
 			if(needPromote)
 			{

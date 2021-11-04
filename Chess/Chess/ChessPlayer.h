@@ -20,6 +20,9 @@ struct PositionScore
 	PositionScoreType type;
 	int score;
 	int bound;
+
+	PositionScore();
+	PositionScore(PositionScoreType type, int score, int bound);
 };
 
 typedef std::unordered_map<uint64_t, PositionScore> ScoreByZobristKey;
@@ -55,6 +58,7 @@ private:
 	bool			isAI;
 	Board*			board;
 	GameState*		gameState;
+	
 	
 };
 
