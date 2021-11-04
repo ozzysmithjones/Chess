@@ -1,25 +1,33 @@
 #include <stdlib.h>
 #include <limits>
+#include <random>
 #include "ZobristHasher.h"
+
+typedef std::mt19937 RNG;
+const uint32_t seed_val = 137;
 
 ZobristHasher::ZobristHasher()
 {
+    RNG rng;
+    rng.seed(seed_val);
+    std::uniform_int_distribution<uint64_t> dist;
+
     for (unsigned int i = 0; i < 64 * 12; i++)
     {
-        pieceSeeds[i] = rand() % std::numeric_limits<unsigned long long>::max();
+        pieceSeeds[i] = (unsigned long long)dist(rng);//rand() % std::numeric_limits<unsigned long long>::max();
     }
 
     for (unsigned int i = 0; i < 4; i++)
     {
-        castleSeeds[i] = rand() % std::numeric_limits<unsigned long long>::max();
+        castleSeeds[i] = (unsigned long long)dist(rng);
     }
 
     for (unsigned int i = 0; i < 8; i++)
     {
-        enpassantSeeds[i] = rand() % std::numeric_limits<unsigned long long>::max();
+        enpassantSeeds[i] = (unsigned long long)dist(rng);
     }
 
-    turnSeed = rand() % std::numeric_limits<unsigned long long>::max();
+    turnSeed = (unsigned long long)dist(rng);
 }
 
 ZobristHasher::~ZobristHasher()

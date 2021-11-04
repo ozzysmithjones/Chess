@@ -13,7 +13,7 @@ void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBl
 	(*playerBlack)->SetAI(false,3);
 
 	*playerWhite = new ChessPlayer(gameState,true);
-	//(*playerWhite)->SetAI(false,3);
+	(*playerWhite)->SetAI(false, 3);
 }
 
 ChessPlayer::ChessPlayer(GameState* _gameState, bool _isWhite)
