@@ -1,4 +1,5 @@
 #pragma once
+#include <stdlib.h>
 #include "Board.h"
 #include "TurnState.h"
 
@@ -9,17 +10,17 @@ public:
 	ZobristHasher();
 	~ZobristHasher();
 
-	unsigned long long HashForPosition(bool isWhiteTurn, const Board& board, const TurnState& turnState, const unsigned int* whitePlayerPositions, const unsigned int* blackPlayerPositions);
-	unsigned long long HashForPiece(bool isWhite, PieceType pieceType, unsigned int position);
-	unsigned long long HashForEnpassant(unsigned int row);
-	unsigned long long HashForIsWhiteTurn();
-	unsigned long long HashForCastling(bool white, bool right);
+	uint64_t HashForPosition(bool isWhiteTurn, const Board& board, const TurnState& turnState, const unsigned int* whitePlayerPositions, const unsigned int* blackPlayerPositions);
+	uint64_t HashForPiece(bool isWhite, PieceType pieceType, unsigned int position);
+	uint64_t HashForEnpassant(unsigned int row);
+	uint64_t HashForIsWhiteTurn();
+	uint64_t HashForCastling(bool white, bool right);
 
 private:
 
-	unsigned long long pieceSeeds[64 * 12];
-	unsigned long long castleSeeds[4];
-	unsigned long long enpassantSeeds[8];
-	unsigned long long turnSeed;
+	uint64_t pieceSeeds[64 * 12];
+	uint64_t castleSeeds[4];
+	uint64_t enpassantSeeds[8];
+	uint64_t turnSeed;
 };
 

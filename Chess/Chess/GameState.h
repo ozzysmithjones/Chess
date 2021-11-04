@@ -32,7 +32,7 @@ public:
 	inline unsigned int* GetBlackPositions() { return blackPlayer.positions; }
 	void MakeMove(const Move& move);
 	void UnmakeMove();
-    inline unsigned long long GetPositionZobristKey() const { return zobristKey; }
+    inline uint64_t GetPositionZobristKey() const { return zobristKey; }
 
 	bool IsInCheck();
     bool IsInCheck(bool white);
@@ -55,7 +55,7 @@ private:
 	Player blackPlayer;
 
     ZobristHasher* zobristHasher;
-    unsigned long long zobristKey;
+    uint64_t zobristKey;
     
 	void AddPawnMoves(bool whitePiece, unsigned int position, const std::stack<TurnState>& stateLog, const Board& board, std::vector<Move>& moves);
 	void AddKnightMoves(bool isWhite, unsigned int position, const Board& board, std::vector<Move>& moves);

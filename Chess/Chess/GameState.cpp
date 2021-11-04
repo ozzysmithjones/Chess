@@ -42,7 +42,6 @@ void GameState::MakeMove(const Move& move)
     board[endPosition] = piece;
     board[startPosition] = 0u;
 
-
     //castle directions:
     int left = pieceIsWhite ? 0 : (Board::WIDTH * Board::HEIGHT) - 8;
     int right = left + 7;
@@ -148,8 +147,9 @@ void GameState::UnmakeMove()
     unsigned int pieceId        = GetId(piece);
     PieceType pieceType         = GetType(piece);
 
-    //update the zobrist key by xor 
     zobristKey = zobristKey ^ zobristHasher->HashForPiece(pieceIsWhite, pieceType, startPosition) ^ zobristHasher->HashForPiece(pieceIsWhite, pieceType, endPosition);
+
+    //update the zobrist key by xor 
     if (IsValid(stateLog.top().capturedPiece)) //handle capture removing a piece from the zobrist key
     {
         zobristKey = zobristKey ^ zobristHasher->HashForPiece(IsWhite(stateLog.top().capturedPiece), GetType(stateLog.top().capturedPiece), endPosition);
@@ -230,7 +230,7 @@ void GameState::UnmakeMove()
 
     case MoveType::PROMOTION:
         board[startPosition] = Promote(piece, PieceType::PAWN);
-        zobristKey = zobristKey ^ zobristHasher->HashForPiece(pieceIsWhite, PieceType::PAWN, endPosition) ^ zobristHasher->HashForPiece(pieceIsWhite, promoteType, endPosition);
+        zobristKey = zobristKey ^ zobristHasher->HashForPiece(pieceIsWhite, promoteType, endPosition) ^ zobristHasher->HashForPiece(pieceIsWhite, PieceType::PAWN, endPosition);
         break;
     }
 
@@ -285,7 +285,6 @@ void GameState::GetAvalibleMoves(std::vector<Move>& moves)
     unsigned int count = 0;
     for (unsigned int i = 0; i < 16u; i++)
     {
-        
         unsigned int position = player.positions[i];
         const Piece piece = board[position];
         bool isWhite = IsWhite(piece);
@@ -296,8 +295,7 @@ void GameState::GetAvalibleMoves(std::vector<Move>& moves)
         }
     }
 
-    moves.reserve(count);
-   
+    moves.reserve(std::min(count, moves.max_size()));
 
     for (unsigned int i = 0; i < 16u; i++)
     {

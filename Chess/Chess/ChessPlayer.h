@@ -8,14 +8,21 @@
 
 using namespace std;
 
-struct PieceInPostion
+enum PositionScoreType
 {
-	Piece piece;
-	int col;
-	int row;
+	ALPHA,
+	BETA,
+	EXACT
 };
 
-typedef vector<PieceInPostion> vecPieces;
+struct PositionScore
+{
+	PositionScoreType type;
+	int score;
+	int bound;
+};
+
+typedef std::unordered_map<uint64_t, PositionScore> ScoreByZobristKey;
 
 int RowDiff(int position, int row);
 int CenterDiff(int position, bool maximise = true);
@@ -29,14 +36,12 @@ public:
 
 	void			SetAI(bool random, int depth);
 	bool			IsAI() { return isAI; }
-	unsigned int	getAllLivePieces(vecPieces& vpieces);
-	vector<Move>	getValidMovesForPiece(PieceInPostion pip);
 	bool			chooseAIMove(Move& moveToMake);
 
 protected:
 
 	bool IsWhitePlayer() { return isWhite; }
-	int MiniMax(int depth, bool white, int alpha, int beta, KillerMoveTable& killerMoveTable, std::unordered_map<unsigned long long, int>& scoresByPosition);
+	int MiniMax(int depth, bool white, int alpha, int beta, KillerMoveTable& killerMoveTable, ScoreByZobristKey& scoresByPosition);
 
 	virtual bool PrioritiseMoveA(const Move& a, const Move& b, const Move* killerMoves, const size_t numKillerMoves) const;
 	int EvaluatePosition(bool white, const Board& board, const std::vector<Move>& moves);

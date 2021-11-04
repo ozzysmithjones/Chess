@@ -10,10 +10,10 @@
 void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, GameState* gameState)
 {
 	*playerBlack = new ChessPlayer(gameState, false);
-	(*playerBlack)->SetAI(false,3);
+	(*playerBlack)->SetAI(false, 0);
 
 	*playerWhite = new ChessPlayer(gameState,true);
-	(*playerWhite)->SetAI(false, 3);
+	(*playerWhite)->SetAI(false, 0);
 }
 
 ChessPlayer::ChessPlayer(GameState* _gameState, bool _isWhite)
@@ -28,40 +28,6 @@ void ChessPlayer::SetAI(bool _random, int _depth)
 	isAI = true;
 	random = _random;
 	depth = _depth;
-}
-
-unsigned int ChessPlayer::getAllLivePieces(vecPieces& vpieces)
-{
-	vpieces.clear();
-	PieceInPostion pip;
-
-	unsigned int count = 0;
-	for (int i = board->MIN_ROW_INDEX; i < board->MAX_ROW_INDEX; i++)
-	{
-		for (int j = board->MIN_COL_INDEX; j < board->MAX_COL_INDEX; j++)
-		{
-			Piece pPiece = board->At(j,i);
-
-			//if (pPiece == 0)
-			//	continue;
-		//	if (pPiece.isWhite != isWhite)
-			//	continue;
-
-			count++;
-			pip.piece = pPiece;
-			pip.row = i;
-			pip.col = j;
-			vpieces.emplace_back(pip);
-		}
-	}
-
-	return count;
-	
-}
-
-vector<Move> ChessPlayer::getValidMovesForPiece(PieceInPostion pip)
-{
-	return gameState->GetLegalMoves(pip.col, pip.row);//Gameplay::getValidMoves(m_pGameStatus, m_pBoard, pip.piece, pip.row, pip.col);
 }
 
 // chooseAIMove
@@ -80,7 +46,7 @@ bool ChessPlayer::chooseAIMove(Move& moveToMake)
 		return true;
 	}
 
-	std::unordered_map<unsigned long long, int> scoresByPosition;
+	std::unordered_map<uint64_t, PositionScore> scoresByPosition;
 	KillerMoveTable killerMoveTable;
 
 	std::sort(moves.begin(), moves.end(), [this](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b,nullptr,0); });
@@ -89,10 +55,31 @@ bool ChessPlayer::chooseAIMove(Move& moveToMake)
 
 	for (auto& move : moves)
 	{
-
+		const uint64_t key = gameState->GetPositionZobristKey();
 		gameState->MakeMove(move);
 		int score = MiniMax(depth, gameState->IsWhiteTurn(), INT_MIN, INT_MAX, killerMoveTable, scoresByPosition);
 		gameState->UnmakeMove();
+
+		//bool exact = ;
+		//assert(exact);
+		if (key != gameState->GetPositionZobristKey())
+		{
+			//Get move variables: (they are compressed into an integer for space efficiency)
+			unsigned int startPosition = GetStartPos(move);
+			unsigned int endPosition = GetEndPos(move);
+			MoveType moveType = GetMoveType(move);
+			PieceType captureType = GetCaptureType(move);
+			PieceType promoteType = GetPromoteType(move);
+
+			Piece piece = gameState->GetBoard()[startPosition];
+			bool pieceIsWhite = IsWhite(piece);
+			unsigned int pieceId = GetId(piece);
+			PieceType pieceType = GetType(piece);
+
+			int x = endPosition & 7;
+			int y = endPosition >> 3;
+			int num = 0;
+		}
 
 		if ((score >= bestScore && isWhite) || (score <= bestScore && !isWhite))
 		{
@@ -104,20 +91,18 @@ bool ChessPlayer::chooseAIMove(Move& moveToMake)
 	return true;
 }
 
-int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta, KillerMoveTable& killerMoveTable, std::unordered_map<unsigned long long, int>& scoresByPosition)
+int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta, KillerMoveTable& killerMoveTable, ScoreByZobristKey& scoresByZobristKey)
 {
-	const unsigned long long key = gameState->GetPositionZobristKey();
-	if (scoresByPosition.find(key) != scoresByPosition.end())
-	{
-		return scoresByPosition[key];
-	}
-
-
 	std::vector<Move> moves = gameState->GetLegalMoves();
+	const uint64_t rootKey = gameState->GetPositionZobristKey();
+
 	if ((depth <= 0) || moves.empty())
 	{
-		int score = EvaluatePosition(white, *board, moves);;
-		scoresByPosition[key] = score;
+		
+		int score = EvaluatePosition(white, *board, moves);
+		scoresByZobristKey[rootKey].type = PositionScoreType::EXACT;
+		scoresByZobristKey[rootKey].bound = score;
+		scoresByZobristKey[rootKey].score = score;
 		return score;
 	}
 
@@ -132,7 +117,20 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta, KillerMoveT
 		for (auto move : moves)
 		{
 			gameState->MakeMove(move);
-			int score = MiniMax(depth - 1, false, alpha, beta, killerMoveTable, scoresByPosition);
+
+			const uint64_t key = gameState->GetPositionZobristKey();
+			if (scoresByZobristKey.find(key) != scoresByZobristKey.end())
+			{
+				const PositionScore& positionScore = scoresByZobristKey[key];
+
+				if ((positionScore.type == PositionScoreType::EXACT) || (positionScore.type == PositionScoreType::ALPHA && positionScore.bound >= beta))
+				{
+					gameState->UnmakeMove();
+					return scoresByZobristKey[key].score;
+				}
+			}
+
+			int score = MiniMax(depth - 1, false, alpha, beta, killerMoveTable, scoresByZobristKey);
 			max = std::max(max, score);
 			gameState->UnmakeMove();
 
@@ -145,7 +143,9 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta, KillerMoveT
 			alpha = std::max(alpha, max);
 		}
 		
-		//scoresByPosition[key] = max;
+		scoresByZobristKey[rootKey].type = PositionScoreType::ALPHA;
+		scoresByZobristKey[rootKey].bound = beta;
+		scoresByZobristKey[rootKey].score = max;
 		return max;
 	}
 	else 
@@ -155,7 +155,19 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta, KillerMoveT
 		for (auto move : moves)
 		{
 			gameState->MakeMove(move);
-			int score = MiniMax(depth - 1, true, alpha, beta, killerMoveTable, scoresByPosition);
+
+			const uint64_t key = gameState->GetPositionZobristKey();
+			if (scoresByZobristKey.find(key) != scoresByZobristKey.end())
+			{
+				const PositionScore& positionScore = scoresByZobristKey[key];
+				if ((positionScore.type == PositionScoreType::EXACT) || (positionScore.type == PositionScoreType::BETA && positionScore.bound >= alpha))
+				{
+					gameState->UnmakeMove();
+					return scoresByZobristKey[key].score;
+				}
+			}
+
+			int score = MiniMax(depth - 1, true, alpha, beta, killerMoveTable, scoresByZobristKey);
 			min = std::min(min,score);
 			gameState->UnmakeMove();
 
@@ -168,13 +180,16 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta, KillerMoveT
 			beta = std::min(beta, min);
 		}
 
-		//scoresByPosition[key] = min;
+		scoresByZobristKey[rootKey].type = PositionScoreType::BETA;
+		scoresByZobristKey[rootKey].bound = alpha;
+		scoresByZobristKey[rootKey].score = min;
 		return min;
 	}
 }
 
 bool ChessPlayer::PrioritiseMoveA(const Move& a, const Move& b, const Move* killerMoves, const size_t numKillerMoves) const
 {
+	
 	//Prioritise "killer moves" that caused a cut-off before.
 	for (size_t i = 0; i < numKillerMoves; i++)
 	{
@@ -187,6 +202,7 @@ bool ChessPlayer::PrioritiseMoveA(const Move& a, const Move& b, const Move* kill
 			return false;
 		}
 	}
+	
 
 	PieceType aPromote = GetPromoteType(a);
 	PieceType bPromote = GetPromoteType(b);
@@ -209,6 +225,7 @@ bool ChessPlayer::PrioritiseMoveA(const Move& a, const Move& b, const Move* kill
 
 int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vector<Move>& moves)
 {
+
 	if (moves.empty())
 	{
 		//return white ? INT_MIN : INT_MAX;
@@ -239,28 +256,27 @@ int ChessPlayer::EvaluateSide(bool white, const Board& board)
 		Piece piece = board[position];
 		if (IsValid(piece) && IsWhite(piece) == white && GetId(piece) == i)
 		{
-			score += (GetScore(piece) << 4);
+			score += (GetScore(piece) << 5);
 
 			switch (GetType(piece))
 			{
 			case PieceType::PAWN:
-				score -= (RowDiff(position, promoteRow)) >> 1;
+				score -= (RowDiff(position, promoteRow));
 				break;
 			case PieceType::KING:
-				score += CenterDiff(position, false);
+				score += CenterDiff(position, false) << 1;
 				break;
 
 			default:
-				score -= CenterDiff(position);
+				score -= CenterDiff(position) << 1;
 				break;
 			}
 
-			/*
+			
 			OnPieceMoves(white, GetType(piece), position, gameState->GetStateLog(), board, [&score](unsigned int startPosition, unsigned int endPosition, MoveType moveType, PieceType capturedType)
 				{
-					score += capturedType != PieceType::NONE ? GetScore(capturedType) : 0;
+					score += capturedType != PieceType::NONE ? GetScore(capturedType) : 1;
 				});
-				*/
 				
 		}
 	}
