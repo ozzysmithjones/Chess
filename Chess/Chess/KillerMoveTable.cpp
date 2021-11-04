@@ -4,7 +4,7 @@
 
 void KillerMoveTable::Push_front(unsigned int ply, Move move)
 {
-    for (unsigned int i = 1; i < maxKillerMovesPerPly-1; i++)
+    for (unsigned int i = 0; i < maxKillerMovesPerPly-1; i++)
     {
         killerMoves[ply][i + 1] = killerMoves[ply][i];
     }

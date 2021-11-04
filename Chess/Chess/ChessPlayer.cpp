@@ -1,6 +1,8 @@
 #include <limits>
 #include <algorithm>
+#include <assert.h>
 #include "ChessPlayer.h"
+
 //#include "Chess\Piece.h"
 
 //using namespace std;
@@ -8,10 +10,10 @@
 void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, GameState* gameState)
 {
 	*playerBlack = new ChessPlayer(gameState, false);
-	(*playerBlack)->SetAI(false,4);
+	(*playerBlack)->SetAI(false,3);
 
 	*playerWhite = new ChessPlayer(gameState,true);
-	(*playerWhite)->SetAI(false,4);
+	//(*playerWhite)->SetAI(false,3);
 }
 
 ChessPlayer::ChessPlayer(GameState* _gameState, bool _isWhite)
@@ -78,15 +80,18 @@ bool ChessPlayer::chooseAIMove(Move& moveToMake)
 		return true;
 	}
 
+	std::unordered_map<unsigned long long, int> scoresByPosition;
 	KillerMoveTable killerMoveTable;
+
 	std::sort(moves.begin(), moves.end(), [this](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b,nullptr,0); });
 	moveToMake = moves[0];
 	int bestScore = isWhite ? INT_MIN : INT_MAX;
 
 	for (auto& move : moves)
 	{
+
 		gameState->MakeMove(move);
-		int score = MiniMax(depth, gameState->IsWhiteTurn(), INT_MIN, INT_MAX, killerMoveTable);
+		int score = MiniMax(depth, gameState->IsWhiteTurn(), INT_MIN, INT_MAX, killerMoveTable, scoresByPosition);
 		gameState->UnmakeMove();
 
 		if ((score >= bestScore && isWhite) || (score <= bestScore && !isWhite))
@@ -99,13 +104,21 @@ bool ChessPlayer::chooseAIMove(Move& moveToMake)
 	return true;
 }
 
-int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta, KillerMoveTable& killerMoveTable)
+int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta, KillerMoveTable& killerMoveTable, std::unordered_map<unsigned long long, int>& scoresByPosition)
 {
-	std::vector<Move> moves = gameState->GetLegalMoves();
+	const unsigned long long key = gameState->GetPositionZobristKey();
+	if (scoresByPosition.find(key) != scoresByPosition.end())
+	{
+		return scoresByPosition[key];
+	}
 
+
+	std::vector<Move> moves = gameState->GetLegalMoves();
 	if ((depth <= 0) || moves.empty())
 	{
-		return EvaluatePosition(white, *board, moves);
+		int score = EvaluatePosition(white, *board, moves);;
+		scoresByPosition[key] = score;
+		return score;
 	}
 
 	size_t numKillerMoves;
@@ -119,7 +132,7 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta, KillerMoveT
 		for (auto move : moves)
 		{
 			gameState->MakeMove(move);
-			int score = MiniMax(depth - 1, false, alpha, beta, killerMoveTable);
+			int score = MiniMax(depth - 1, false, alpha, beta, killerMoveTable, scoresByPosition);
 			max = std::max(max, score);
 			gameState->UnmakeMove();
 
@@ -132,6 +145,7 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta, KillerMoveT
 			alpha = std::max(alpha, max);
 		}
 		
+		//scoresByPosition[key] = max;
 		return max;
 	}
 	else 
@@ -141,7 +155,7 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta, KillerMoveT
 		for (auto move : moves)
 		{
 			gameState->MakeMove(move);
-			int score = MiniMax(depth - 1, true, alpha, beta, killerMoveTable);
+			int score = MiniMax(depth - 1, true, alpha, beta, killerMoveTable, scoresByPosition);
 			min = std::min(min,score);
 			gameState->UnmakeMove();
 
@@ -154,13 +168,14 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta, KillerMoveT
 			beta = std::min(beta, min);
 		}
 
+		//scoresByPosition[key] = min;
 		return min;
 	}
 }
 
 bool ChessPlayer::PrioritiseMoveA(const Move& a, const Move& b, const Move* killerMoves, const size_t numKillerMoves) const
 {
-	//Prioritise "killer moves" that caused a beta cut-off.
+	//Prioritise "killer moves" that caused a cut-off before.
 	for (size_t i = 0; i < numKillerMoves; i++)
 	{
 		if (killerMoves[i] == a)

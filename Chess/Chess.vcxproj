@@ -179,6 +179,8 @@
     <ClCompile Include="Chess\Move.cpp" />
     <ClCompile Include="Chess\Piece.cpp" />
     <ClCompile Include="stb_image.cpp.cpp" />
+    <ClCompile Include="Chess\ZobristHasher.cpp" />
+    <ClCompile Include="Chess\TurnState.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Chess\Board.h" />
@@ -191,6 +193,8 @@
     <ClInclude Include="Chess\Move.h" />
     <ClInclude Include="Chess\Piece.h" />
     <ClInclude Include="stb_image.h" />
+    <ClInclude Include="Chess\ZobristHasher.h" />
+    <ClInclude Include="Chess\TurnState.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

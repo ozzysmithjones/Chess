@@ -2,7 +2,11 @@
 
 GameState::GameState()
 {
-
+    zobristHasher = new ZobristHasher();
+}
+GameState::~GameState()
+{
+    delete zobristHasher;
 }
 void GameState::MakeMove(const Move& move)
 {
@@ -21,14 +25,23 @@ void GameState::MakeMove(const Move& move)
 
     //Create a new "turn state" struct to keep track of enpassant/castle ruling
     TurnState turnState = stateLog.empty() ? TurnState() : stateLog.top();
+    turnState.preventedCastling = false;
     turnState.enpassantPosition = NO_ENPASSANT;
     turnState.capturedPiece = board[endPosition];
+
+    //update the zobrist key by xor 
+    zobristKey = zobristKey ^ zobristHasher->HashForPiece(pieceIsWhite, pieceType, startPosition) ^ zobristHasher->HashForPiece(pieceIsWhite, pieceType, endPosition);
+    if (IsValid(board[endPosition])) //handle capture removing a piece from the zobrist key
+    {
+        zobristKey = zobristKey ^ zobristHasher->HashForPiece(IsWhite(board[endPosition]), GetType(board[endPosition]), endPosition);
+    }
 
     //Move the piece:
     unsigned int* positions = pieceIsWhite ? whitePlayer.positions : blackPlayer.positions;
     positions[pieceId] = endPosition;
     board[endPosition] = piece;
     board[startPosition] = 0u;
+
 
     //castle directions:
     int left = pieceIsWhite ? 0 : (Board::WIDTH * Board::HEIGHT) - 8;
@@ -39,20 +52,23 @@ void GameState::MakeMove(const Move& move)
     case MoveType::NORMAL:
 
         //castling made illegal
-        if (pieceType == PieceType::KING)
+        if (pieceType == PieceType::KING && turnState.GetCastlingLegal(pieceIsWhite))
         {
             turnState.SetCastlingIllegal(pieceIsWhite);
+            zobristKey = zobristKey ^ zobristHasher->HashForCastling(pieceIsWhite, true) ^ zobristHasher->HashForCastling(pieceIsWhite, false);
         }
 
-        if (pieceType == PieceType::ROOK)
+        if (pieceType == PieceType::ROOK && turnState.GetCastlingLegal(pieceIsWhite))
         {
             if (startPosition == right)
             {
                 turnState.SetCastlingIllegal(pieceIsWhite, true);
+                zobristKey = zobristKey ^ zobristHasher->HashForCastling(pieceIsWhite, true);
             }
             else if (startPosition == left)
             {
                 turnState.SetCastlingIllegal(pieceIsWhite, false);
+                zobristKey = zobristKey ^ zobristHasher->HashForCastling(pieceIsWhite, false);
             }
         }
 
@@ -60,15 +76,18 @@ void GameState::MakeMove(const Move& move)
 
     case MoveType::ADVANCED_PAWN:
         turnState.enpassantPosition = endPosition;
+        zobristKey = zobristKey ^ zobristHasher->HashForEnpassant(endPosition >> 3);
         break;
 
     case MoveType::ENPASSANT_LOWER:
         turnState.capturedPieceEnpassant = board[startPosition - 1];
         board[startPosition - 1] = 0u;
+        zobristKey = zobristKey ^ zobristHasher->HashForPiece(!pieceIsWhite, PieceType::PAWN, startPosition - 1);
         break;
     case MoveType::ENPASSANT_HIGHER:
         turnState.capturedPieceEnpassant = board[startPosition + 1];
         board[startPosition + 1] = 0u;
+        zobristKey = zobristKey ^ zobristHasher->HashForPiece(!pieceIsWhite, PieceType::PAWN, startPosition + 1);
         break;
     case MoveType::CASTLE_LOWER:
 
@@ -80,6 +99,8 @@ void GameState::MakeMove(const Move& move)
     }
 
         turnState.SetCastlingIllegal(pieceIsWhite);
+        zobristKey = zobristKey ^ zobristHasher->HashForPiece(pieceIsWhite, PieceType::ROOK, left) ^ zobristHasher->HashForPiece(pieceIsWhite, PieceType::ROOK, endPosition + 1);
+        zobristKey = zobristKey ^ zobristHasher->HashForCastling(pieceIsWhite, true) ^ zobristHasher->HashForCastling(pieceIsWhite, false);
         break;
     case MoveType::CASTLE_HIGHER:
 
@@ -91,10 +112,13 @@ void GameState::MakeMove(const Move& move)
     }
 
         turnState.SetCastlingIllegal(pieceIsWhite);
+        zobristKey = zobristKey ^ zobristHasher->HashForPiece(pieceIsWhite, PieceType::ROOK, right) ^ zobristHasher->HashForPiece(pieceIsWhite, PieceType::ROOK, endPosition - 1);
+        zobristKey = zobristKey ^ zobristHasher->HashForCastling(pieceIsWhite, true) ^ zobristHasher->HashForCastling(pieceIsWhite, false);
         break;
 
     case MoveType::PROMOTION:
         board[endPosition] = Promote(piece, promoteType);
+        zobristKey = zobristKey ^ zobristHasher->HashForPiece(pieceIsWhite, PieceType::PAWN, endPosition) ^ zobristHasher->HashForPiece(pieceIsWhite, promoteType, endPosition);
         break;
     }
 
@@ -102,10 +126,12 @@ void GameState::MakeMove(const Move& move)
     moveLog.push(move);
     stateLog.push(turnState);
     isWhiteTurn = !isWhiteTurn;
+    zobristKey = zobristKey ^ zobristHasher->HashForIsWhiteTurn();
 }
 
 void GameState::UnmakeMove()
 {
+    
     const Move& move = moveLog.top();
     moveLog.pop();
 
@@ -122,6 +148,13 @@ void GameState::UnmakeMove()
     unsigned int pieceId        = GetId(piece);
     PieceType pieceType         = GetType(piece);
 
+    //update the zobrist key by xor 
+    zobristKey = zobristKey ^ zobristHasher->HashForPiece(pieceIsWhite, pieceType, startPosition) ^ zobristHasher->HashForPiece(pieceIsWhite, pieceType, endPosition);
+    if (IsValid(stateLog.top().capturedPiece)) //handle capture removing a piece from the zobrist key
+    {
+        zobristKey = zobristKey ^ zobristHasher->HashForPiece(IsWhite(stateLog.top().capturedPiece), GetType(stateLog.top().capturedPiece), endPosition);
+    }
+
     //Move the piece:
     unsigned int* positions = pieceIsWhite ? whitePlayer.positions : blackPlayer.positions;
     positions[pieceId] = startPosition;
@@ -135,16 +168,37 @@ void GameState::UnmakeMove()
     switch (moveType)
     {
     case MoveType::NORMAL:
+
+        if(pieceType == PieceType::KING && stateLog.top().preventedCastling)
+        {
+            zobristKey = zobristKey ^ zobristHasher->HashForCastling(pieceIsWhite, true) ^ zobristHasher->HashForCastling(pieceIsWhite, false);
+        }
+
+        if (pieceType == PieceType::ROOK && stateLog.top().preventedCastling)
+        {
+            if (startPosition == right)
+            {
+                zobristKey = zobristKey ^ zobristHasher->HashForCastling(pieceIsWhite, true);
+            }
+            else if (startPosition == left)
+            {
+                zobristKey = zobristKey ^ zobristHasher->HashForCastling(pieceIsWhite, false);
+            }
+        }
+
         break;
 
     case MoveType::ADVANCED_PAWN:
+        zobristKey = zobristKey ^ zobristHasher->HashForEnpassant(endPosition >> 3);
         break;
 
     case MoveType::ENPASSANT_LOWER:
         board[startPosition - 1] = stateLog.top().capturedPieceEnpassant;
+        zobristKey = zobristKey ^ zobristHasher->HashForPiece(!pieceIsWhite, PieceType::PAWN, startPosition - 1);
         break;
     case MoveType::ENPASSANT_HIGHER:
         board[startPosition + 1] = stateLog.top().capturedPieceEnpassant;
+        zobristKey = zobristKey ^ zobristHasher->HashForPiece(!pieceIsWhite, PieceType::PAWN, startPosition + 1);
         break;
     case MoveType::CASTLE_LOWER:
 
@@ -153,6 +207,9 @@ void GameState::UnmakeMove()
             positions[GetId(rook)] = left;
             board[left] = rook;
             board[endPosition + 1] = 0u;
+
+            zobristKey = zobristKey ^ zobristHasher->HashForPiece(pieceIsWhite, PieceType::ROOK, left) ^ zobristHasher->HashForPiece(pieceIsWhite, PieceType::ROOK, endPosition + 1);
+            zobristKey = zobristKey ^ zobristHasher->HashForCastling(pieceIsWhite, true) ^ zobristHasher->HashForCastling(pieceIsWhite, false);
         }
 
         break;
@@ -164,18 +221,23 @@ void GameState::UnmakeMove()
             positions[GetId(rook)] = right;
             board[right] = rook;
             board[endPosition - 1] = 0u;
+
+            zobristKey = zobristKey ^ zobristHasher->HashForPiece(pieceIsWhite, PieceType::ROOK, right) ^ zobristHasher->HashForPiece(pieceIsWhite, PieceType::ROOK, endPosition - 1);
+            zobristKey = zobristKey ^ zobristHasher->HashForCastling(pieceIsWhite, true) ^ zobristHasher->HashForCastling(pieceIsWhite, false);
         }
 
         break;
 
     case MoveType::PROMOTION:
         board[startPosition] = Promote(piece, PieceType::PAWN);
+        zobristKey = zobristKey ^ zobristHasher->HashForPiece(pieceIsWhite, PieceType::PAWN, endPosition) ^ zobristHasher->HashForPiece(pieceIsWhite, promoteType, endPosition);
         break;
     }
 
     //shift turn
     isWhiteTurn = !isWhiteTurn;
     stateLog.pop();
+    zobristKey = zobristKey ^ zobristHasher->HashForIsWhiteTurn();
 }
 
 bool GameState::IsInCheck()
@@ -415,6 +477,8 @@ void GameState::SetUpPlayerPieces(bool white)
         positions[x] = (firstRow << 3) + x;
         positions[x + 8] = (secondRow << 3) + x;
     }
+   
+    zobristKey = zobristHasher->HashForPosition(true, board, TurnState(), whitePlayer.positions, blackPlayer.positions);
 }
 
 std::vector<Move> GameState::GetLegalMoves()
@@ -869,46 +933,6 @@ void GameState::AddPawnMove(std::vector<Move>& moves, Move move, bool isWhite)
     }
 }
 
-void TurnState::SetCastlingIllegal(bool white)
-{
-    if (white)
-    {
-        castlingLegality[0] = false;
-        castlingLegality[1] = false;
-    }
-    else
-    {
-        castlingLegality[2] = false;
-        castlingLegality[3] = false;
-    }
-}
-
-void TurnState::SetCastlingIllegal(bool white, bool right)
-{
-    if (white)
-    {
-        castlingLegality[right] = false;
-    }
-    else
-    {
-        castlingLegality[2 + right] = false;
-    }
-}
-
-bool TurnState::GetCastlingLegal(bool white, bool right) const
-{
-    return castlingLegality[(white ? 0 : 2) + right];
-}
-
-TurnState::TurnState()
-{
-    enpassantPosition = NO_ENPASSANT;
-    capturedPiece = 0;
-    castlingLegality[0] = true;
-    castlingLegality[1] = true;
-    castlingLegality[2] = true;
-    castlingLegality[3] = true;
-}
 
 
 

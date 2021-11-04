@@ -27,6 +27,8 @@
     </ClCompile>
     <ClCompile Include="Chess\Game.cpp" />
     <ClCompile Include="Chess\KillerMoveTable.cpp" />
+    <ClCompile Include="Chess\ZobristHasher.cpp" />
+    <ClCompile Include="Chess\TurnState.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Chess\ChessPlayer.h">
@@ -53,6 +55,8 @@
     <ClInclude Include="Chess\Game.h" />
     <ClInclude Include="Chess\VectorStack.h" />
     <ClInclude Include="Chess\KillerMoveTable.h" />
+    <ClInclude Include="Chess\ZobristHasher.h" />
+    <ClInclude Include="Chess\TurnState.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="AI Code">

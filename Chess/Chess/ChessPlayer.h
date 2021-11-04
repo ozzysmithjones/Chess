@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <memory>
+#include <unordered_map>
 #include "GameState.h"
 #include "Move.h"
 #include "KillerMoveTable.h"
@@ -35,7 +36,7 @@ public:
 protected:
 
 	bool IsWhitePlayer() { return isWhite; }
-	int MiniMax(int depth, bool white, int alpha, int beta, KillerMoveTable& killerMoveTable);
+	int MiniMax(int depth, bool white, int alpha, int beta, KillerMoveTable& killerMoveTable, std::unordered_map<unsigned long long, int>& scoresByPosition);
 
 	virtual bool PrioritiseMoveA(const Move& a, const Move& b, const Move* killerMoves, const size_t numKillerMoves) const;
 	int EvaluatePosition(bool white, const Board& board, const std::vector<Move>& moves);
@@ -49,5 +50,6 @@ private:
 	bool			isAI;
 	Board*			board;
 	GameState*		gameState;
+	
 };
 

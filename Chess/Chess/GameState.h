@@ -2,30 +2,14 @@
 #include <stack>
 #include <vector>
 #include <unordered_map>
+#include "ZobristHasher.h"
 #include "Board.h"
+#include "TurnState.h"
 #include "Move.h"
 
 const unsigned int NO_ENPASSANT = 255u;
 
 class GameState;
-
-struct TurnState
-{
-	
-	unsigned int enpassantPosition;
-	Piece capturedPiece;
-	Piece capturedPieceEnpassant;
-
-	void SetCastlingIllegal(bool white);
-	void SetCastlingIllegal(bool white, bool right);
-	bool GetCastlingLegal(bool white, bool right) const;
-
-	TurnState();
-
-private:
-
-	bool castlingLegality[4];
-};
 
 struct Player
 {
@@ -38,6 +22,7 @@ class GameState
 public:
 
 	GameState();
+    ~GameState();
 
 	void SetUpPlayerPieces(bool white);
     inline const std::stack<TurnState>& GetStateLog() const { return stateLog; }
@@ -47,6 +32,7 @@ public:
 	inline unsigned int* GetBlackPositions() { return blackPlayer.positions; }
 	void MakeMove(const Move& move);
 	void UnmakeMove();
+    inline unsigned long long GetPositionZobristKey() const { return zobristKey; }
 
 	bool IsInCheck();
     bool IsInCheck(bool white);
@@ -62,13 +48,14 @@ private:
 	bool isWhiteTurn = true;
 	std::stack<Move> moveLog;
 	std::stack<TurnState> stateLog;
-	std::vector<Move> avalibleMoves;
 	Board board;
 
 	const unsigned int kingId = 4;
 	Player whitePlayer;
 	Player blackPlayer;
 
+    ZobristHasher* zobristHasher;
+    unsigned long long zobristKey;
     
 	void AddPawnMoves(bool whitePiece, unsigned int position, const std::stack<TurnState>& stateLog, const Board& board, std::vector<Move>& moves);
 	void AddKnightMoves(bool isWhite, unsigned int position, const Board& board, std::vector<Move>& moves);
