@@ -11,6 +11,7 @@ public:
 
 	//For drawing and UI
 	const Board& GetChessBoard() { return gameState->GetBoard(); }
+	bool IsAITurn() const;
 	bool IsWhiteTurn() const { return gameState->IsWhiteTurn(); }
 	bool IsCheck() { return gameState->IsInCheck(); }
 	bool IsCheckMate() { return gameState->GetLegalMoves().empty(); }

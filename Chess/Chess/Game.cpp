@@ -15,6 +15,11 @@ Game::~Game()
     gameState = nullptr;
 }
 
+bool Game::IsAITurn() const
+{
+    return gameState->IsWhiteTurn() ? whitePlayer->IsAI() : blackPlayer->IsAI();
+}
+
 void Game::MakePlayerMove(Move move)
 {
     gameState->MakeMove(move);

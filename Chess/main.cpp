@@ -85,6 +85,11 @@ bool pressed = false;
 Game *chess;
 //Board* boardCopy = nullptr;
 
+/**
+    Debugging
+*/
+uint64_t zobristKey = 0;
+
 void newGame();
 
 /**
@@ -732,6 +737,13 @@ void specialFunction(int key, int x, int y)
 
 void keyFunction(unsigned char key, int x, int y)
 {
+    /*
+    if (chess != nullptr && chess->IsAITurn())
+    {
+        return;
+    }
+    */
+
     switch(key)
     {
         case 'w':

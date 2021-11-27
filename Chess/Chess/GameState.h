@@ -46,22 +46,25 @@ private:
 	void GetAvalibleMoves(std::vector<Move>& moves, unsigned int position, Piece piece);
 	void GetAvalibleMoves(std::vector<Move>& moves);
 
+    //The games history and castling/enpassant state
 	bool isWhiteTurn = true;
 	std::stack<Move> moveLog;
 	std::stack<TurnState> stateLog;
 	Board board;
 
+    //For keeping track of positions by piece
 	const unsigned int kingId = 4;
 	Player whitePlayer;
 	Player blackPlayer;
 
+    //For storing the positions by zobrist key
     ZobristHasher* zobristHasher;
     uint64_t zobristKey;
     
 	void AddPawnMoves(bool whitePiece, unsigned int position, const std::stack<TurnState>& stateLog, const Board& board, std::vector<Move>& moves);
 	void AddKnightMoves(bool isWhite, unsigned int position, const Board& board, std::vector<Move>& moves);
-	void AddBishopMoves(bool isWhite, unsigned int position, const Board& board, std::vector<Move>& moves);
-	void AddRookMoves(bool isWhite, unsigned int position, const Board& board, std::vector<Move>& moves);
+	void AddBishopMoves(bool isWhite, unsigned int position, const Board& board, std::vector<Move>& moves, bool isQueen);
+	void AddRookMoves(bool isWhite, unsigned int position, const Board& board, std::vector<Move>& moves, bool isQueen);
 	void AddKingMoves(bool isWhite, unsigned int position, const std::stack<TurnState>& stateLog, const Board& board, std::vector<Move>& moves);
     
 
@@ -140,8 +143,6 @@ void OnPawnMoves(bool whitePiece, unsigned int position, const std::stack<TurnSt
         }
     }
 }
-
-
 
 template<typename T>
 void OnKnightMoves(bool isWhite, unsigned int position, const Board& board, const T& moveFunc)

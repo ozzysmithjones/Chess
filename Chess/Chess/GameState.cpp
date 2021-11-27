@@ -235,16 +235,16 @@ void GameState::GetAvalibleMoves(std::vector<Move>& moves, unsigned int position
         break;
 
     case PieceType::BISHOP:
-        AddBishopMoves(isWhite, position, board, moves);
+        AddBishopMoves(isWhite, position, board, moves,false);
         break;
 
     case PieceType::ROOK:
-        AddRookMoves(isWhite, position, board, moves);
+        AddRookMoves(isWhite, position, board, moves,false);
         break;
 
     case PieceType::QUEEN:
-        AddBishopMoves(isWhite, position, board, moves);
-        AddRookMoves(isWhite, position, board, moves);
+        AddBishopMoves(isWhite, position, board, moves,true);
+        AddRookMoves(isWhite, position, board, moves,true);
         break;
 
     case PieceType::KING:
@@ -461,7 +461,7 @@ std::vector<Move> GameState::GetLegalMoves()
     std::vector<Move> moves;
     GetAvalibleMoves(moves);
     
-    /*
+    
     for (unsigned int i = 0; i < moves.size();i++)
     {
         MakeMove(moves[i]);
@@ -475,7 +475,7 @@ std::vector<Move> GameState::GetLegalMoves()
 
         UnmakeMove();
     }
-    */
+    
 
     return moves;
 }
@@ -502,6 +502,7 @@ const std::vector<Move> GameState::GetLegalMoves(unsigned int x, unsigned int y)
         
     }
     */
+    
 
     return moves;
 }
@@ -717,11 +718,11 @@ void GameState::AddPawnMoves(bool whitePiece, unsigned int position, const std::
 
     if (board[position + direction] == 0)
     {
-        AddPawnMove(moves, CreateMove(position, position + direction, defaultType, PieceType::NONE),whitePiece);
+        AddPawnMove(moves, CreateMove(position, position + direction, defaultType, PieceType::PAWN,PieceType::NONE),whitePiece);
 
         if (y == advanceRow && board[position + direction + direction] == 0)
         {
-            moves.push_back(CreateMove(position, position + direction + direction, MoveType::ADVANCED_PAWN, PieceType::NONE));
+            moves.push_back(CreateMove(position, position + direction + direction, MoveType::ADVANCED_PAWN, PieceType::PAWN, PieceType::NONE));
         }
     }
 
@@ -731,12 +732,12 @@ void GameState::AddPawnMoves(bool whitePiece, unsigned int position, const std::
     {
         if (board[position + direction + 1] != 0 && IsWhite(board[position + direction + 1]) != whitePiece)
         {
-            AddPawnMove(moves, CreateMove(position, position + direction + 1, defaultType, GetType(board[position + direction + 1])), whitePiece);
+            AddPawnMove(moves, CreateMove(position, position + direction + 1, defaultType, PieceType::PAWN, GetType(board[position + direction + 1])), whitePiece);
         }
 
         if (position + 1 == enPassantablePosition && board[position + direction + 1] == 0 && IsWhite(board[position + 1]) != whitePiece)
         {
-            moves.push_back(CreateMove(position, position + direction + 1, MoveType::ENPASSANT_HIGHER, PieceType::PAWN));
+            moves.push_back(CreateMove(position, position + direction + 1, MoveType::ENPASSANT_HIGHER, PieceType::PAWN, PieceType::PAWN));
         }
     }
 
@@ -744,12 +745,12 @@ void GameState::AddPawnMoves(bool whitePiece, unsigned int position, const std::
     {
         if (board[position + direction - 1] != 0 && IsWhite(board[position + direction - 1]) != whitePiece)
         {
-            AddPawnMove(moves, CreateMove(position, position + direction - 1, defaultType, GetType(board[position + direction + 1])), whitePiece);
+            AddPawnMove(moves, CreateMove(position, position + direction - 1, defaultType, PieceType::PAWN, GetType(board[position + direction + 1])), whitePiece);
         }
 
         if (position - 1 == enPassantablePosition && board[position + direction - 1] == 0 && IsWhite(board[position - 1]) != whitePiece)
         {
-            moves.push_back(CreateMove(position, position + direction - 1, MoveType::ENPASSANT_LOWER, PieceType::PAWN));
+            moves.push_back(CreateMove(position, position + direction - 1, MoveType::ENPASSANT_LOWER, PieceType::PAWN, PieceType::PAWN));
         }
     }
 }
@@ -770,13 +771,14 @@ void GameState::AddKnightMoves(bool isWhite, unsigned int position, const Board&
 
         if (board.InBounds(x, y) && (board[endPosition] == 0 || IsWhite(board[endPosition]) != isWhite))
         {
-            moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, GetType(board[endPosition])));
+            moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, PieceType::KNIGHT, GetType(board[endPosition])));
         }
     }
 }
 
-void GameState::AddBishopMoves(bool isWhite, unsigned int position, const Board& board, std::vector<Move>& moves)
+void GameState::AddBishopMoves(bool isWhite, unsigned int position, const Board& board, std::vector<Move>& moves,bool isQueen)
 {
+    PieceType pieceType = isQueen ? PieceType::QUEEN : PieceType::BISHOP;
     const unsigned int centerY = (position >> 3);
     const unsigned int centerX = (position & 7);
     int x, y;
@@ -797,13 +799,13 @@ void GameState::AddBishopMoves(bool isWhite, unsigned int position, const Board&
             {
                 if (IsWhite(board[endPosition]) != isWhite)
                 {
-                    moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, GetType(board[endPosition])));
+                    moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, pieceType, GetType(board[endPosition])));
                 }
 
                 break;
             }
 
-            moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, PieceType::NONE));
+            moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, pieceType, PieceType::NONE));
 
             x += xDelta;
             y += yDelta;
@@ -812,8 +814,9 @@ void GameState::AddBishopMoves(bool isWhite, unsigned int position, const Board&
     }
 }
 
-void GameState::AddRookMoves(bool isWhite, unsigned int position, const Board& board, std::vector<Move>& moves)
+void GameState::AddRookMoves(bool isWhite, unsigned int position, const Board& board, std::vector<Move>& moves, bool isQueen)
 {
+    PieceType pieceType = isQueen ? PieceType::QUEEN : PieceType::ROOK;
     const unsigned int centerY = (position >> 3);
     const unsigned int centerX = (position & 7);
     int x, y;
@@ -834,13 +837,13 @@ void GameState::AddRookMoves(bool isWhite, unsigned int position, const Board& b
             {
                 if (IsWhite(board[endPosition]) != isWhite)
                 {
-                    moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, GetType(board[endPosition])));
+                    moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, pieceType, GetType(board[endPosition])));
                 }
 
                 break;
             }
 
-            moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, PieceType::NONE));
+            moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, pieceType, PieceType::NONE));
 
             x += xDelta;
             y += yDelta;
@@ -864,7 +867,7 @@ void GameState::AddKingMoves(bool isWhite, unsigned int position, const std::sta
 
             if (board.InBounds(centerX + x, centerY + y) && !(x == 0 && y == 0) && (board[endPosition] == 0 || IsWhite(board[endPosition]) != isWhite))
             {
-                moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, GetType(board[endPosition])));
+                moves.push_back(CreateMove(position, endPosition, MoveType::NORMAL, PieceType::KING, GetType(board[endPosition])));
             }
         }
     }
@@ -885,12 +888,12 @@ void GameState::AddKingMoves(bool isWhite, unsigned int position, const std::sta
 
     if (leftLegal && board[left] != 0 && GetType(board[left]) == PieceType::ROOK && IsWhite(board[left]) == isWhite && board[position - 1] == 0 && board[position - 2] == 0)
     {
-        moves.push_back(CreateMove(position, position - 2, MoveType::CASTLE_LOWER, PieceType::NONE));
+        moves.push_back(CreateMove(position, position - 2, MoveType::CASTLE_LOWER, PieceType::KING, PieceType::NONE));
     }
 
     if (rightLegal && board[right] != 0 && GetType(board[right]) == PieceType::ROOK && IsWhite(board[right]) == isWhite && board[position + 1] == 0 && board[position + 2] == 0)
     {
-        moves.push_back(CreateMove(position, position + 2, MoveType::CASTLE_HIGHER, PieceType::NONE));
+        moves.push_back(CreateMove(position, position + 2, MoveType::CASTLE_HIGHER, PieceType::KING, PieceType::NONE));
     }
 }
 

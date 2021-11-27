@@ -47,6 +47,7 @@ TurnState::TurnState()
 {
     enpassantPosition = 255;
     capturedPiece = 0;
+    capturedPieceEnpassant = 0;
     castlingLegality[0] = true;
     castlingLegality[1] = true;
     castlingLegality[2] = true;
