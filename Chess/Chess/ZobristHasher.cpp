@@ -38,6 +38,24 @@ uint64_t ZobristHasher::HashForPosition(bool isWhiteTurn, const Board& board, co
 {
     uint64_t hash = 0;
 
+    for (unsigned int i = 0; i < 4; i++)
+    {
+        if (!turnState.GetCastlingLegal(i & 1u, i & 2u))
+        {
+            hash = hash ^ castleSeeds[i];
+        }
+    }
+
+    if (turnState.enpassantPosition != 255)
+    {
+        hash = hash ^ HashForEnpassant(turnState.enpassantPosition >> 3);
+    }
+
+    if (!isWhiteTurn)
+    {
+        hash = hash ^ turnSeed;
+    }
+
     for (unsigned int i = 0; i < 16; i++)
     {
         int pos = whitePlayerPositions[i];
@@ -55,24 +73,6 @@ uint64_t ZobristHasher::HashForPosition(bool isWhiteTurn, const Board& board, co
         {
             hash = hash ^ pieceSeeds[((unsigned int)GetType(board[pos]) + 5) * 64 + pos];
         }
-    }
-
-    for (unsigned int i = 0; i < 4; i++)
-    {
-        if (!turnState.GetCastlingLegal(i & 1u, i & 2u))
-        {
-            hash = hash ^ castleSeeds[i];
-        }
-    }
-
-    if (turnState.enpassantPosition != 255)
-    {
-        hash = hash ^ HashForEnpassant(turnState.enpassantPosition >> 3);
-    }
-
-    if (!isWhiteTurn)
-    {
-        hash = hash ^ turnSeed;
     }
 
     return hash;

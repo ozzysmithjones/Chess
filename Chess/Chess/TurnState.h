@@ -4,7 +4,7 @@
 
 struct TurnState
 {
-	uint64_t zob;
+	//uint64_t zob;
 	unsigned int enpassantPosition;
 	Piece capturedPiece;
 	Piece capturedPieceEnpassant;
@@ -17,8 +17,5 @@ struct TurnState
 	TurnState();
 
 private:
-
 	bool castlingLegality[4];
 };
-
-

@@ -10,10 +10,10 @@
 void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, GameState* gameState)
 {
 	*playerBlack = new ChessPlayer(gameState, false);
-	(*playerBlack)->SetAI(false, 5);
+	(*playerBlack)->SetAI(false, 1);
 
-	*playerWhite = new ChessPlayer(gameState,true);
-	(*playerWhite)->SetAI(false, 5);
+	*playerWhite = new ChessPlayer(gameState, true);
+	(*playerWhite)->SetAI(false, 4);
 }
 
 ChessPlayer::ChessPlayer(GameState* _gameState, bool _isWhite)
@@ -49,7 +49,7 @@ bool ChessPlayer::chooseAIMove(Move& moveToMake)
 	ScoreByZobristKey scoresByZobristKey;
 	KillerMoveTable killerMoveTable;
 
-	std::sort(moves.begin(), moves.end(), [this](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b,nullptr,0); });
+	std::sort(moves.begin(), moves.end(), [this](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b, nullptr, 0); });
 	moveToMake = moves[0];
 	int bestScore = isWhite ? INT_MIN : INT_MAX;
 
@@ -78,7 +78,6 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta, KillerMoveT
 
 	if ((depth <= 0) || moves.empty())
 	{
-		
 		int score = EvaluatePosition(white, *board, moves);
 		//scoresByZobristKey[rootKey] = PositionScore(PositionScoreType::EXACT, score, score);
 		return score;
@@ -86,7 +85,7 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta, KillerMoveT
 
 	size_t numKillerMoves;
 	const Move* killerMoves = killerMoveTable.GetKillerMoves(depth, numKillerMoves);
-	std::sort(moves.begin(), moves.end(), [this, killerMoves, numKillerMoves](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b,killerMoves,numKillerMoves); });
+	std::sort(moves.begin(), moves.end(), [this, killerMoves, numKillerMoves](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b, killerMoves, numKillerMoves); });
 
 	if (white)
 	{
@@ -122,11 +121,11 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta, KillerMoveT
 
 			alpha = std::max(alpha, max);
 		}
-		
+
 		//scoresByZobristKey[rootKey] = PositionScore(PositionScoreType::ALPHA, max, beta);
 		return max;
 	}
-	else 
+	else
 	{
 		int min = INT_MAX;
 
@@ -148,7 +147,7 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta, KillerMoveT
 			*/
 
 			int score = MiniMax(depth - 1, true, alpha, beta, killerMoveTable, scoresByZobristKey);
-			min = std::min(min,score);
+			min = std::min(min, score);
 			gameState->UnmakeMove();
 
 			if (min <= alpha)
@@ -167,7 +166,6 @@ int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta, KillerMoveT
 
 bool ChessPlayer::PrioritiseMoveA(const Move& a, const Move& b, const Move* killerMoves, const size_t numKillerMoves) const
 {
-	
 	//Prioritise "killer moves" that caused a cut-off before.
 	for (size_t i = 0; i < numKillerMoves; i++)
 	{
@@ -180,7 +178,7 @@ bool ChessPlayer::PrioritiseMoveA(const Move& a, const Move& b, const Move* kill
 			return false;
 		}
 	}
-	
+
 
 	PieceType aPromote = GetPromoteType(a);
 	PieceType bPromote = GetPromoteType(b);
@@ -205,11 +203,10 @@ bool ChessPlayer::PrioritiseMoveA(const Move& a, const Move& b, const Move* kill
 
 int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vector<Move>& moves)
 {
-
 	if (moves.empty())
 	{
 		//return white ? INT_MIN : INT_MAX;
-		
+
 		if (gameState->IsInCheck(white))
 		{
 			return white ? INT_MIN : INT_MAX;
@@ -218,7 +215,6 @@ int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vec
 		{
 			return 0;
 		}
-		
 	}
 
 	return EvaluateSide(true, board) - EvaluateSide(false, board);
@@ -258,7 +254,6 @@ int ChessPlayer::EvaluateSide(bool white, const Board& board)
 					score += capturedType != PieceType::NONE ? GetScore(capturedType) : 0;
 				});
 				*/
-				
 		}
 	}
 
@@ -284,7 +279,7 @@ int CenterDiff(int position, bool maximise)
 	int xDiff = std::min(abs((int)(centerMinX - x)), abs((int)(centerMaxX - x)));
 	int yDiff = std::min(abs((int)(centerMinY - y)), abs((int)(centerMaxY - y)));
 
-	return maximise ? std::max(xDiff, yDiff) : std::min(xDiff, yDiff);//(xDiff * xDiff) + (yDiff * yDiff); ///std::max(xDiff, yDiff);
+	return maximise ? std::max(xDiff, yDiff) : std::min(xDiff, yDiff); //(xDiff * xDiff) + (yDiff * yDiff); ///std::max(xDiff, yDiff);
 }
 
 int PosDiff(int position, int other)
@@ -296,10 +291,9 @@ int PosDiff(int position, int other)
 
 PositionScore::PositionScore()
 {
-
 }
 
 PositionScore::PositionScore(PositionScoreType type, int score, int bound)
-	:type(type), score(score),bound(bound)
+	: type(type), score(score), bound(bound)
 {
 }
