@@ -8,6 +8,8 @@
 #include "Move.h"
 
 const unsigned int NO_ENPASSANT = 255u;
+constexpr unsigned int whiteStartingSquares[16]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+constexpr unsigned int blackStartingSquares[16]{56, 57, 58, 59, 60, 61, 62, 63, 48, 49, 50, 51, 52, 53, 54, 55};
 
 class GameState;
 
@@ -31,16 +33,17 @@ public:
 	inline unsigned int* GetBlackPositions() { return blackPlayer.positions; }
 	void MakeMove(const Move& move);
 	void UnmakeMove();
-	inline uint64_t GetPositionZobristKey() const { return zobristKey; }
+	//inline uint64_t GetPositionZobristKey() const { return zobristKey; }
 	uint64_t CalculateZobristKey() const;
 
 	bool IsInCheck();
-	bool IsInCheck(bool white);
+
 	inline bool IsWhiteTurn() const { return isWhiteTurn; }
 	std::vector<Move> GetLegalMoves();
 	const std::vector<Move> GetLegalMoves(unsigned int x, unsigned int y);
 
 private:
+	bool IsInCheck(const TurnState& turnState, bool isWhite);
 	void GetAvalibleMoves(std::vector<Move>& moves, unsigned int position, Piece piece);
 	void GetAvalibleMoves(std::vector<Move>& moves);
 
@@ -50,14 +53,14 @@ private:
 	std::stack<TurnState> stateLog;
 	Board board;
 
-	//For keeping track of positions by piece
-	const unsigned int kingId = 4;
+	//For checks
+	unsigned int whiteKingPos;
+	unsigned int blackKingPos;
+	PieceType checkPieceType = PieceType::NONE;
+	unsigned int checkPiecePosition;
+
 	Player whitePlayer;
 	Player blackPlayer;
-
-	//For storing the positions by zobrist key
-	// ZobristHasher* zobristHasher;
-	uint64_t zobristKey;
 
 	void AddPawnMoves(bool whitePiece, unsigned int position, const std::stack<TurnState>& stateLog, const Board& board, std::vector<Move>& moves);
 	void AddKnightMoves(bool isWhite, unsigned int position, const Board& board, std::vector<Move>& moves);
@@ -65,6 +68,11 @@ private:
 	void AddRookMoves(bool isWhite, unsigned int position, const Board& board, std::vector<Move>& moves, bool isQueen);
 	void AddKingMoves(bool isWhite, unsigned int position, const std::stack<TurnState>& stateLog, const Board& board, std::vector<Move>& moves);
 
+	bool PawnDeliversCheck(const unsigned int position, bool kingIsWhite, PieceType promoteType = PieceType::NONE) const;
+	bool BishopDeliversCheck(unsigned int x, unsigned int y, bool kingIsWhite) const;
+	bool RookDeliversCheck(unsigned int x, unsigned int y, bool kingIsWhite) const;
+	bool KnightDeliversCheck(const unsigned int x, const unsigned int y, bool kingIsWhite) const;
+	bool KingDeliversCheck(const unsigned int x, const unsigned int y, bool kingIsWhite) const;
 
 	static void AddPawnMove(std::vector<Move>& moves, Move pawnMove, bool isWhite);
 };
@@ -73,6 +81,8 @@ constexpr int diagX[4]{1, -1, 1, -1};
 constexpr int diagY[4]{1, 1, -1, -1};
 constexpr int orthoX[4]{0, 1, 0, -1};
 constexpr int orthoY[4]{1, 0, -1, 0};
+constexpr int knightX[8]{-1, 1, 2, 2, 1, -1, -2, -2};
+constexpr int knightY[8]{2, 2, -1, 1, -2, -2, 1, -1};
 
 #pragma region Move Function templates
 

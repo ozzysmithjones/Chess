@@ -4,10 +4,12 @@
 
 struct TurnState
 {
-	//uint64_t zob;
 	unsigned int enpassantPosition;
 	Piece capturedPiece;
 	Piece capturedPieceEnpassant;
+
+	PieceType checkPieceType = PieceType::NONE;
+	unsigned int checkPiecePosition;
 
 	void SetCastlingIllegal(bool white);
 	void SetCastlingIllegal(bool white, bool right);

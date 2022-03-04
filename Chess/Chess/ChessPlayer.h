@@ -15,6 +15,13 @@ enum PositionScoreType
 	EXACT
 };
 
+enum class GameStage
+{
+	EARLY,
+	MIDDLE,
+	END,
+};
+
 struct PositionScore
 {
 	PositionScoreType type;
@@ -34,31 +41,27 @@ int PosDiff(int position, int other);
 class ChessPlayer
 {
 public:
-	static void		setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, GameState* gameState);
+	static void setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, GameState* gameState);
 	ChessPlayer(GameState* gameState, bool isWhite);
 
-	void			SetAI(bool random, int depth);
-	bool			IsAI() { return isAI; }
-	bool			chooseAIMove(Move& moveToMake);
+	void SetAI(bool random, int depth);
+	bool IsAI() { return isAI; }
+	bool chooseAIMove(Move& moveToMake);
 
 protected:
-
 	bool IsWhitePlayer() { return isWhite; }
-	int MiniMax(int depth, bool white, int alpha, int beta, KillerMoveTable& killerMoveTable, ScoreByZobristKey& scoresByPosition);
+	int MiniMax(int depth, bool white, int alpha, int beta, KillerMoveTable& killerMoveTable);
 
 	virtual bool PrioritiseMoveA(const Move& a, const Move& b, const Move* killerMoves, const size_t numKillerMoves) const;
 	int EvaluatePosition(bool white, const Board& board, const std::vector<Move>& moves);
 	virtual int EvaluateSide(bool white, const Board& board);
+	GameStage CalculateGameStage(bool white) const;
 
 private:
-
-	int				depth;
-	bool			random = false;
-	bool			isWhite;
-	bool			isAI;
-	Board*			board;
-	GameState*		gameState;
-	
-	
+	int depth;
+	bool random = false;
+	bool isWhite;
+	bool isAI;
+	Board* board;
+	GameState* gameState;
 };
-
