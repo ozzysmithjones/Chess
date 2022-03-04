@@ -13,19 +13,33 @@
     <ClCompile Include="stb_image.cpp.cpp">
       <Filter>Core Code</Filter>
     </ClCompile>
-    <ClCompile Include="Chess\Piece.cpp">
+    <ClCompile Include="Chess\BitboardManipulation.cpp">
       <Filter>Core Code</Filter>
     </ClCompile>
-    <ClCompile Include="Chess\Move.cpp">
+    <ClCompile Include="Chess\Chess.cpp">
       <Filter>Core Code</Filter>
     </ClCompile>
-    <ClCompile Include="Chess\Board.cpp">
+    <ClCompile Include="Chess\Constants.cpp">
       <Filter>Core Code</Filter>
     </ClCompile>
     <ClCompile Include="Chess\GameState.cpp">
       <Filter>Core Code</Filter>
     </ClCompile>
-    <ClCompile Include="Chess\Game.cpp" />
+    <ClCompile Include="Chess\KillerMoveTable.cpp">
+      <Filter>Core Code</Filter>
+    </ClCompile>
+    <ClCompile Include="Chess\Move.cpp">
+      <Filter>Core Code</Filter>
+    </ClCompile>
+    <ClCompile Include="Chess\Piece.cpp">
+      <Filter>Core Code</Filter>
+    </ClCompile>
+    <ClCompile Include="Chess\Random.cpp">
+      <Filter>Core Code</Filter>
+    </ClCompile>
+    <ClCompile Include="Chess\Zobrist.cpp">
+      <Filter>Core Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Chess\ChessPlayer.h">
@@ -37,20 +51,33 @@
     <ClInclude Include="stb_image.h">
       <Filter>Core Code</Filter>
     </ClInclude>
-    <ClInclude Include="Chess\Piece.h">
+    <ClInclude Include="Chess\BitboardManipulation.h">
       <Filter>Core Code</Filter>
     </ClInclude>
-    <ClInclude Include="Chess\Move.h">
+    <ClInclude Include="Chess\Chess.h">
       <Filter>Core Code</Filter>
     </ClInclude>
-    <ClInclude Include="Chess\Board.h">
+    <ClInclude Include="Chess\Constants.h">
       <Filter>Core Code</Filter>
     </ClInclude>
     <ClInclude Include="Chess\GameState.h">
       <Filter>Core Code</Filter>
     </ClInclude>
-    <ClInclude Include="Chess\Game.h" />
-    <ClInclude Include="Chess\VectorStack.h" />
+    <ClInclude Include="Chess\KillerMoveTable.h">
+      <Filter>Core Code</Filter>
+    </ClInclude>
+    <ClInclude Include="Chess\Move.h">
+      <Filter>Core Code</Filter>
+    </ClInclude>
+    <ClInclude Include="Chess\Piece.h">
+      <Filter>Core Code</Filter>
+    </ClInclude>
+    <ClInclude Include="Chess\Random.h">
+      <Filter>Core Code</Filter>
+    </ClInclude>
+    <ClInclude Include="Chess\Zobrist.h">
+      <Filter>Core Code</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="AI Code">

@@ -1,24 +1,21 @@
 #include <limits>
 #include <algorithm>
 #include "ChessPlayer.h"
-//#include "Chess\Piece.h"
 
-//using namespace std;
 
-void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, GameState* gameState)
+void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, Chess* chess)
 {
-	*playerBlack = new ChessPlayer(gameState, false);
-	(*playerBlack)->SetAI(false,3);
+	*playerBlack = new ChessPlayer(chess, false);
+	(*playerBlack)->SetAI(true, 3);
 
-	*playerWhite = new ChessPlayer(gameState,true);
-	(*playerWhite)->SetAI(false,1);
+	*playerWhite = new ChessPlayer(chess, true);
+	//(*playerWhite)->SetAI(true, 1);
 }
 
-ChessPlayer::ChessPlayer(GameState* _gameState, bool _isWhite)
+ChessPlayer::ChessPlayer(Chess* chess, bool isWhite)
+	: chess(chess), isWhite(isWhite)
 {
-	board = &_gameState->GetBoardRef();
-	isWhite = _isWhite;
-	gameState = _gameState;
+
 }
 
 void ChessPlayer::SetAI(bool _random, int _depth)
@@ -28,45 +25,15 @@ void ChessPlayer::SetAI(bool _random, int _depth)
 	depth = _depth;
 }
 
-unsigned int ChessPlayer::getAllLivePieces(vecPieces& vpieces)
-{
-	vpieces.clear();
-	PieceInPostion pip;
 
-	unsigned int count = 0;
-	for (int i = board->MIN_ROW_INDEX; i < board->MAX_ROW_INDEX; i++)
-	{
-		for (int j = board->MIN_COL_INDEX; j < board->MAX_COL_INDEX; j++)
-		{
-			Piece pPiece = board->At(j,i);
-
-			//if (pPiece == 0)
-			//	continue;
-		//	if (pPiece.isWhite != isWhite)
-			//	continue;
-
-			count++;
-			pip.piece = pPiece;
-			pip.row = i;
-			pip.col = j;
-			vpieces.emplace_back(pip);
-		}
-	}
-
-	return count;
-	
-}
-
-vector<Move> ChessPlayer::getValidMovesForPiece(PieceInPostion pip)
-{
-	return gameState->GetLegalMoves(pip.col, pip.row);//Gameplay::getValidMoves(m_pGameStatus, m_pBoard, pip.piece, pip.row, pip.col);
-}
 
 // chooseAIMove
 // in this method - for an AI chess player - choose a move to make. This is called once per play. 
 bool ChessPlayer::chooseAIMove(Move& moveToMake)
 {
-	std::vector<Move> moves = gameState->GetLegalMoves();
+	std::vector<Move> moves;
+	chess->CalculateLegalMoves(moves);
+
 	if (moves.empty())
 	{
 		return false;
@@ -78,161 +45,29 @@ bool ChessPlayer::chooseAIMove(Move& moveToMake)
 		return true;
 	}
 
-	std::sort(moves.begin(), moves.end(), [this](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b); });
+	//std::sort(moves.begin(), moves.end(), [this](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b); });
 	moveToMake = moves[0];
 	int bestScore = isWhite ? INT_MIN : INT_MAX;
 
 	for (auto& move : moves)
 	{
-		gameState->MakeMove(move);
-		int score = MiniMax(depth, gameState->IsWhiteTurn(), INT_MIN, INT_MAX);
-		gameState->UnmakeMove();
+		//gameState->MakeMove(move);
+		//int score = MiniMax(depth, gameState->IsWhiteTurn(), INT_MIN, INT_MAX);
+		//gameState->UnmakeMove();
 
-		if ((score >= bestScore && isWhite) || (score <= bestScore && !isWhite))
-		{
-			bestScore = score;
-			moveToMake = move;
-		}
+		//if ((score >= bestScore && isWhite) || (score <= bestScore && !isWhite))
+		//{
+		//	bestScore = score;
+			//moveToMake = move;
+		//}
 	}
 
 	return true;
 }
 
-int ChessPlayer::MiniMax(int depth, bool white, int alpha, int beta)
-{
-	std::vector<Move> moves = gameState->GetLegalMoves();
 
-	if ((depth <= 0) || moves.empty())
-	{
-		return EvaluatePosition(white, *board, moves);
-	}
 
-	std::sort(moves.begin(), moves.end(), [this](const Move& a, const Move& b) { return this->PrioritiseMoveA(a, b); });
-	if (white)
-	{
-		int max = INT_MIN;
 
-		for (auto move : moves)
-		{
-			gameState->MakeMove(move);
-			int score = MiniMax(depth - 1, false, alpha, beta);
-			max = std::max(max, score);
-			gameState->UnmakeMove();
-
-			if (max >= beta)
-			{
-				break;
-			}
-
-			alpha = std::max(alpha, max);
-		}
-		
-		return max;
-	}
-	else 
-	{
-		int min = INT_MAX;
-
-		for (auto move : moves)
-		{
-			gameState->MakeMove(move);
-			int score = MiniMax(depth - 1, true, alpha, beta);
-			min = std::min(min,score);
-			gameState->UnmakeMove();
-
-			if (min <= alpha)
-			{
-				break;
-			}
-
-			beta = std::min(beta, min);
-		}
-
-		return min;
-	}
-}
-
-bool ChessPlayer::PrioritiseMoveA(const Move& a, const Move& b) const
-{
-	PieceType aPromote = GetPromoteType(a);
-	PieceType bPromote = GetPromoteType(b);
-
-	if (aPromote != PieceType::NONE || bPromote != PieceType::NONE)
-	{
-		return GetScore(aPromote) > GetScore(bPromote);
-	}
-
-	PieceType aCapture = GetCaptureType(a);
-	PieceType bCapture = GetCaptureType(b);
-
-	if (aCapture != PieceType::NONE || bCapture != PieceType::NONE)
-	{
-		return GetScore(aCapture) > GetScore(bCapture);
-	}
-
-	return CenterDiff(GetEndPos(a)) < CenterDiff(GetEndPos(b));
-}
-
-int ChessPlayer::EvaluatePosition(bool white, const Board& board, const std::vector<Move>& moves)
-{
-	if (moves.empty())
-	{
-		//return white ? INT_MIN : INT_MAX;
-		
-		if (gameState->IsInCheck(white))
-		{
-			return white ? INT_MIN : INT_MAX;
-		}
-		else
-		{
-			return 0;
-		}
-		
-	}
-
-	return EvaluateSide(true, board) - EvaluateSide(false, board);
-}
-
-int ChessPlayer::EvaluateSide(bool white, const Board& board)
-{
-	int score = 0;
-	const unsigned int* positions = white ? gameState->GetWhitePositions() : gameState->GetBlackPositions();
-	const unsigned int promoteRow = white ? 7 : 0;
-
-	for (unsigned int i = 0; i < 16; i++)
-	{
-		unsigned int position = positions[i];
-		Piece piece = board[position];
-		if (IsValid(piece) && IsWhite(piece) == white && GetId(piece) == i)
-		{
-			score += (GetScore(piece) << 4);
-
-			switch (GetType(piece))
-			{
-			case PieceType::PAWN:
-				score -= (RowDiff(position, promoteRow)) >> 1;
-				break;
-			case PieceType::KING:
-				score += CenterDiff(position, false);
-				break;
-
-			default:
-				score -= CenterDiff(position);
-				break;
-			}
-
-			/*
-			OnPieceMoves(white, GetType(piece), position, gameState->GetStateLog(), board, [&score](unsigned int startPosition, unsigned int endPosition, MoveType moveType, PieceType capturedType)
-				{
-					score += capturedType != PieceType::NONE ? GetScore(capturedType) : 0;
-				});
-				*/
-				
-		}
-	}
-
-	return score;
-}
 
 int RowDiff(int position, int row)
 {

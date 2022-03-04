@@ -169,25 +169,32 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Chess\Board.cpp" />
+    <ClCompile Include="Chess\BitboardManipulation.cpp" />
+    <ClCompile Include="Chess\Chess.cpp" />
     <ClCompile Include="Chess\ChessPlayer.cpp" />
+    <ClCompile Include="Chess\Constants.cpp" />
     <ClCompile Include="Chess\GameState.cpp" />
-    <ClCompile Include="Chess\Game.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="Model.cpp" />
+    <ClCompile Include="Chess\KillerMoveTable.cpp" />
     <ClCompile Include="Chess\Move.cpp" />
     <ClCompile Include="Chess\Piece.cpp" />
+    <ClCompile Include="Chess\Random.cpp" />
+    <ClCompile Include="Chess\Zobrist.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Model.cpp" />
     <ClCompile Include="stb_image.cpp.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Chess\Board.h" />
+    <ClInclude Include="Chess\BitboardManipulation.h" />
+    <ClInclude Include="Chess\Chess.h" />
     <ClInclude Include="Chess\ChessPlayer.h" />
+    <ClInclude Include="Chess\Constants.h" />
     <ClInclude Include="Chess\GameState.h" />
-    <ClInclude Include="Chess\Game.h" />
-    <ClInclude Include="Chess\VectorStack.h" />
-    <ClInclude Include="Model.h" />
+    <ClInclude Include="Chess\KillerMoveTable.h" />
     <ClInclude Include="Chess\Move.h" />
     <ClInclude Include="Chess\Piece.h" />
+    <ClInclude Include="Chess\Random.h" />
+    <ClInclude Include="Chess\Zobrist.h" />
+    <ClInclude Include="Model.h" />
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
