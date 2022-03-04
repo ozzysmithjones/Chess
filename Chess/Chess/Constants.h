@@ -48,6 +48,7 @@ constexpr uint64_t wkCastleAttacked = 0x6000000000000000ULL;
 constexpr uint64_t wqCastleAttacked = 0x0c00000000000000ULL;
 constexpr uint64_t bkCastleAttacked = 0x0000000000000060ULL;
 constexpr uint64_t bqCastleAttacked = 0x000000000000000cULL;
+constexpr uint64_t centre			= 0x0000001818000000ULL;
 
 
 #pragma endregion

@@ -28,8 +28,7 @@ Move CreateMove(unsigned int position, unsigned int endPosition, unsigned int pr
 
 void SetPriority(Move& move, unsigned priority)
 {
-	priority = std::min(63u, priority);
-	move |= priority << 12;
+	move |= (priority << 12) & (unsigned int)MoveMask::priority;
 }
 
 Move SetPromoteMove(Move move, PieceType pieceType)

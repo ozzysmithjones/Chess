@@ -579,7 +579,7 @@ void newAITurn()
 
 	// decide and make the move
 	Move move;
-	bool moveMade = player->chooseAIMove(move);
+	bool moveMade = player->chooseAIMove(legalMoves, move);
 	if (!moveMade)
 	{
 		return; // TODO: if this is the case - what next? The chess engine should have detected a checkmate prior to this. 
