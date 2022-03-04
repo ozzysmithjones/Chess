@@ -49,4 +49,4 @@ inline bool GetIsCheck(const Move move) { return (move & (unsigned)MoveMask::isC
 inline bool GetIsPin(const Move move) { return (move & (unsigned)MoveMask::isPin); }
 
 inline Move SetCheckMove(const Move move) { return (move | ((unsigned)MoveMask::isCheck)); }
-inline Move SetPromoteMove(const Move move, PieceType pieceType) { return (move & ~((unsigned)MoveMask::moveType | (unsigned)MoveMask::promoteType)) | (((unsigned int)MoveType::promote << 18) | ((unsigned int)pieceType << 27)); }
+Move SetPromoteMove(Move move, PieceType pieceType); //{ return (move & ~((unsigned)MoveMask::moveType | (unsigned)MoveMask::promoteType)) | (((unsigned int)MoveType::promote << 18) | ((unsigned int)pieceType << 27); }

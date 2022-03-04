@@ -9,7 +9,6 @@ int CenterDiff(int position, bool maximise = true);
 int PosDiff(int position, int other);
 
 
-
 class ChessPlayer
 {
 public:

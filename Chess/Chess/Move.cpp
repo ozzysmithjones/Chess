@@ -1,5 +1,6 @@
 #include "Move.h"
 #include <utility>
+#include <cassert>
 
 Move CreateMove(unsigned int position, unsigned int endPosition, MoveType moveType, PieceType pieceType)
 {
@@ -30,3 +31,10 @@ void SetPriority(Move& move, unsigned priority)
 	priority = std::min(63u, priority);
 	move |= priority << 12;
 }
+
+Move SetPromoteMove(Move move, PieceType pieceType)
+{
+	move &= ~((unsigned)MoveMask::moveType | (unsigned)MoveMask::promoteType); //clear move type and promote type
+	return move | (((unsigned int)MoveType::promote << 18) | ((unsigned int)pieceType << 27));
+}
+

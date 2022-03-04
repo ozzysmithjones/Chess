@@ -660,7 +660,7 @@ void displayFunction()
 
 			drawValidMoves();
 
-            showWord(-300, WINDOW_HEIGHT / 2 - 24, std::to_string(selectedCol));
+            showWord(-300, WINDOW_HEIGHT / 2 - 24, std::to_string((selectedRow << 3) | selectedCol));
 
 			if(needPromote)
 			{
@@ -770,7 +770,6 @@ void keyFunction(unsigned char key, int x, int y)
                 if (selected)
                 {
                     const unsigned endPosition = (moveToRow << 3) | moveToCol;
-                    Move interpretedMove;
                     bool found = false;
 
                     for (const auto& move : legalMoves)
@@ -789,10 +788,6 @@ void keyFunction(unsigned char key, int x, int y)
                         if (GetMoveType(interpretedMove) == MoveType::promote)
                         {
                             needPromote = true;
-                        }
-                        else 
-                        {
-                            needPromote = false;
                         }
 
                         if(!needPromote)
@@ -920,7 +915,6 @@ void newGame()
     chess = new Chess();
     ChessPlayer::setupPlayers(&whitePlayer, &blackPlayer, chess);
     chess->CalculateLegalMoves(legalMoves);
-    chess->PrintBoard(legalMoves);
 
     selectedRow = 1; selectedCol = 1;
     moveToRow = 1; moveToCol = 1;

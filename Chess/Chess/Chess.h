@@ -46,7 +46,6 @@ private:
 	void CalculateMoves(std::vector<Move>& moves) const;
 	void SetUpBoard();
 	
-
 	inline int GetKingSquare(bool isWhite);
 
 	void AddPotentialPromoteMove(std::vector<Move>& moves, Move move, int rank, int promotionRank) const;

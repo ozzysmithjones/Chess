@@ -222,6 +222,7 @@ void Chess::CalculateLegalMoves(std::vector<Move>& moves)
 {
 	CalculateMoves(moves);
 	
+	
 	int playerkingSquare = GetKingSquare(isWhiteTurn);
 	int opponentKingSquare = GetKingSquare(!isWhiteTurn);
 
@@ -249,6 +250,7 @@ void Chess::CalculateLegalMoves(std::vector<Move>& moves)
 		UndoMove();
 		++i;
 	}
+	
 }
 
 void Chess::CalculateMoves(std::vector<Move>& moves) const
@@ -632,10 +634,10 @@ void Chess::AddPotentialPromoteMove(std::vector<Move>& moves, Move move, int ran
 {
 	if (rank == promotionRank)
 	{
-		moves.emplace_back(SetPromoteMove(move, PieceType::knight));
-		moves.emplace_back(SetPromoteMove(move, PieceType::bishop));
-		moves.emplace_back(SetPromoteMove(move, PieceType::rook));
-		moves.emplace_back(SetPromoteMove(move, PieceType::queen));
+		moves.push_back(SetPromoteMove(move, PieceType::knight));
+		moves.push_back(SetPromoteMove(move, PieceType::bishop));
+		moves.push_back(SetPromoteMove(move, PieceType::rook));
+		moves.push_back(SetPromoteMove(move, PieceType::queen));
 	}
 
 	moves.push_back(move);
