@@ -10,9 +10,10 @@ using namespace std;
 //Model
 #include "Model.h"
 //Chess Game
-#include "Chess/Game.h"
+#include "Chess/Chess.h"
 //#include "Chess\Game.h"
 #include "Chess/ChessPlayer.h"
+#include <algorithm>
 //Window size and position
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
@@ -82,7 +83,11 @@ bool pressed = false;
 /**
     Game Loading
 */
-Game *chess;
+Chess *chess;
+ChessPlayer* whitePlayer;
+ChessPlayer* blackPlayer;
+std::vector<Move> legalMoves;
+
 //Board* boardCopy = nullptr;
 
 void newGame();
@@ -97,7 +102,7 @@ bool    selected = false;
 bool    board_rotating = true;
 bool    ai_moving = false;
 int     rotation = 0;
-bool    check = false, checkMate = false;
+bool    check = false, draw = false, gameOver = false;
 bool    closeGame = false;
 bool	needPromote = false;
 
@@ -147,7 +152,7 @@ void showWord( int x, int y, string word)
 */
 void drawMoveToSquare()
 {
-    float r = 1.0f*(moveToRow- (Board::HEIGHT / 2)), c = 1.0f*(moveToCol- (Board::WIDTH / 2));
+    float r = 1.0f*(moveToRow- 4), c = 1.0f*(moveToCol- 4);
     if(selected)
     {
         glPushMatrix();
@@ -276,22 +281,22 @@ void drawBoardSquares()
 	if (chess == nullptr)
 		return;
 
-    const Board& board = chess->GetChessBoard();
-
     float r, c;
-    for(int row = Board::MIN_ROW_INDEX ; row < Board::MAX_ROW_INDEX ; row++)
+    for(int row = 0; row < 8; row++)
     {
-        for(int col = Board::MIN_COL_INDEX ; col < Board::MAX_COL_INDEX ; col++)
+        for(int col = 0; col < 8 ; col++)
         {
-            r = 1.0f*(row- (Board::HEIGHT / 2));
-            c = 1.0f*(col- (Board::WIDTH / 2));
+            r = 1.0f*(row- 4);
+            c = 1.0f*(col- 4);
             if(row == selectedRow && col == selectedCol)
             {
                 unsigned int index = ToIndex(selectedCol, selectedRow);
+                bool isWhite;
+                PieceType piece = chess->GetPieceAt(index, isWhite);
 
                 if(selected) glColor3f(0.33f, 0.420f, 0.184f);
-                else if(IsValid(board[index]))
-                    if(IsWhite(board[index]) == chess->IsWhiteTurn())
+                else if(piece != PieceType::none)
+                    if(isWhite == chess->IsWhiteTurn())
                         glColor3f(0.0f, 0.5f, 0.0f);
                     else glColor3f(1.0f, 0.0f, 0.0f);
                 else glColor3f(0.3f, 0.7f, 0.5f);
@@ -325,40 +330,44 @@ void drawValidMoves()
 
     if(selected)
     {
-        std::vector<Move> moves = chess->GetLegalmoves(selectedCol, selectedRow);
-        int vec_size = moves.size(), row, col;
+        unsigned int start = (selectedRow << 3) | selectedCol;
 
-        for(int id = 0; id < vec_size; id++)
+        for(const auto& move : legalMoves)
         {
-            unsigned int endPosition = GetEndPos(moves[id]);
-            row = endPosition >> 3;
-            col = endPosition & 7;
+            unsigned startPosition = GetStartPosition(move);
+            unsigned int endPosition = GetEndPosition(move);
 
-            switch(GetMoveType(moves[id]))
+            if (startPosition != start)
+                continue;
+
+            int row = endPosition >> 3;
+            int col = endPosition & 7;
+
+            switch(GetMoveType(move))
             {
-                case MoveType::NORMAL:
+                case MoveType::normal:
                     glColor3f(0.8f, 1.0f, 0.6f);
                     break;
-                case MoveType::ADVANCED_PAWN:
+                case MoveType::advancedPawn:
                     glColor3f(0.8f, 1.0f, 0.6f);
                     break;
-                case MoveType::PROMOTION:
+                case MoveType::promote:
                     glColor3f(1.0f, 0.5f, 0.6f);
                     break;
                // case MoveType::CAPTURE:
                     //glColor3f(1.0f, 0.0f, 0.0f);
                     //break;
-                case MoveType::ENPASSANT_HIGHER:
-                case MoveType::ENPASSANT_LOWER:
+                case MoveType::enpassantHigher:
+                case MoveType::enpassantLower:
                     glColor3f(0.8f, 1.0f, 0.6f);
                     break;
-                case MoveType::CASTLE_HIGHER:
-                case MoveType::CASTLE_LOWER:
+                case MoveType::castleKing:
+                case MoveType::castleQueen:
                     glColor3f(0.196f, 0.804f, 0.196f);
                     break;
             }
 
-            float r = 1.0f*(row- (Board::HEIGHT / 2)), c = 1.0f*(col- (Board::WIDTH / 2));
+            float r = 1.0f* (row- 4), c = 1.0f* (col- 4);
             glPushMatrix();
                     glTranslatef(r, c, 0.501f);
                     glScalef(0.99f, 0.99f, 1.0f);
@@ -374,6 +383,7 @@ void drawValidMoves()
             glPopMatrix();
         }
     }
+
     glColor3f(0, 0, 0);
 }
 
@@ -387,43 +397,41 @@ void drawChessPieces()
 
 	//todo draw more
 
-    const Board& board = chess->GetChessBoard();
-
     float z;
-    for(int row = Board::MIN_ROW_INDEX; row < Board::MAX_ROW_INDEX; row++)
+    for(int rank = 0; rank < 8; rank++)
     {
-        for(int col = Board::MIN_COL_INDEX; col < Board::MAX_COL_INDEX; col++)
+        for(int file = 0; file < 8; file++)
         {
-            if(IsValid(board.C_At(col, row)))
+            bool isWhite;
+            PieceType piece = chess->GetPieceAt((rank << 3) | file, isWhite);
+            if(piece != PieceType::none)
             {
-                const bool isWhite = IsWhite(board.C_At(col, row));
-                const PieceType pieceType = GetType(board.C_At(col, row));
-
                 glPushMatrix();
-                    if(selected && row == selectedRow && col == selectedCol) z = 1.0;
+                    if(selected && rank == selectedRow && file == selectedCol) z = 1.0;
                     else z = 0.5;
-                    glTranslatef((row - (Board::WIDTH / 2)) * 1.0f + 0.5f, (col - (Board::HEIGHT / 2)) * 1.0f + 0.5f, z);
+                    glTranslatef((rank - 4) * 1.0f + 0.5f, (file - 4) * 1.0f + 0.5f, z);
                     glScalef(0.01f, 0.01f, 0.01f);
 
                     if (isWhite)
                     {
-                        glRotatef(90, 0.0f, 0.0f, 1.0f);
-                        glColor3f(1.0f, 1.0f, 0.5f);
+                        glRotatef(-90, 0.0f, 0.0f, 1.0f);
+                        glColor3f(0.5f, 0.5f, 0.5f);
+                       
                     }
                     else 
                     {
-                        glRotatef(-90, 0.0f, 0.0f, 1.0f);
-                        glColor3f(0.5f, 0.5f, 0.5f);
+                        glRotatef(90, 0.0f, 0.0f, 1.0f);
+                        glColor3f(1.0f, 1.0f, 0.5f);
                     }
 
-                    switch(pieceType)
+                    switch(piece)
                     {
-					case PieceType::PAWN: Pawn.Draw(isWhite); break;
-                        case PieceType::ROOK: Rook.Draw(isWhite); break;
-                        case PieceType::KNIGHT: Knight.Draw(isWhite); break;
-                        case PieceType::BISHOP: Bishop.Draw(isWhite); break;
-                        case PieceType::QUEEN: Queen.Draw(isWhite); break;
-                        case PieceType::KING: King.Draw(isWhite); break;
+                    case PieceType::pawn: Pawn.Draw(isWhite); break;
+                    case PieceType::rook: Rook.Draw(isWhite); break;
+                    case PieceType::knight: Knight.Draw(isWhite); break;
+                        case PieceType::bishop: Bishop.Draw(isWhite); break;
+                        case PieceType::queen: Queen.Draw(isWhite); break;
+                        case PieceType::king: King.Draw(isWhite); break;
                     }
                 glPopMatrix();
             }
@@ -437,13 +445,13 @@ void key_W_pressed(bool white)
 {
     if (white) 
     {
-        if (!selected && selectedRow < Board::MAX_ROW_INDEX - 1) selectedRow++;
-        if (selected && moveToRow < Board::MAX_ROW_INDEX - 1) moveToRow++;
+        if (!selected && selectedRow < 7) selectedRow++;
+        if (selected && moveToRow < 7) moveToRow++;
     }
     else 
     {
-        if (!selected && selectedRow > Board::MIN_ROW_INDEX) selectedRow--;
-        if (selected && moveToRow > Board::MIN_ROW_INDEX) moveToRow--;
+        if (!selected && selectedRow > 0) selectedRow--;
+        if (selected && moveToRow > 0) moveToRow--;
     }
 }
 
@@ -451,13 +459,13 @@ void key_D_pressed(bool white)
 {
     if (white)
     {
-        if (!selected && selectedCol < Board::MAX_COL_INDEX - 1) selectedCol++;
-        if (selected && moveToCol < Board::MAX_COL_INDEX - 1) moveToCol++;
+        if (!selected && selectedCol < 7) selectedCol++;
+        if (selected && moveToCol < 7) moveToCol++;
     }
     else
     {
-        if (!selected && selectedCol > Board::MIN_COL_INDEX) selectedCol--;
-        if (selected && moveToCol > Board::MIN_COL_INDEX) moveToCol--;
+        if (!selected && selectedCol > 0) selectedCol--;
+        if (selected && moveToCol > 0) moveToCol--;
     }
 }
 
@@ -465,13 +473,13 @@ void key_S_pressed(bool white)
 {
     if (white)
     {
-        if (!selected && selectedRow > Board::MIN_ROW_INDEX) selectedRow--;
-        if (selected && moveToRow > Board::MIN_ROW_INDEX) moveToRow--;
+        if (!selected && selectedRow > 0) selectedRow--;
+        if (selected && moveToRow > 0) moveToRow--;
     }
     else 
     {
-        if (!selected && selectedRow < Board::MAX_ROW_INDEX - 1) selectedRow++;
-        if (selected && moveToRow < Board::MAX_ROW_INDEX - 1) moveToRow++;
+        if (!selected && selectedRow < 7) selectedRow++;
+        if (selected && moveToRow < 7) moveToRow++;
     }
 }
 
@@ -479,13 +487,13 @@ void key_A_pressed(bool white)
 {
     if (white)
     {
-        if (!selected && selectedCol > Board::MIN_COL_INDEX) selectedCol--;
-        if (selected && moveToCol > Board::MIN_COL_INDEX) moveToCol--;
+        if (!selected && selectedCol > 0) selectedCol--;
+        if (selected && moveToCol > 0) moveToCol--;
     }
     else 
     {
-        if (!selected && selectedCol < Board::MAX_COL_INDEX - 1) selectedCol++;
-        if (selected && moveToCol < Board::MAX_COL_INDEX - 1) moveToCol++;
+        if (!selected && selectedCol < 7) selectedCol++;
+        if (selected && moveToCol < 7) moveToCol++;
     }
 }
 
@@ -493,13 +501,13 @@ void updateTurn(bool white)
 {
     if (white)
     {
-        selectedRow = Board::MIN_ROW_INDEX;
-        selectedCol = Board::MAX_COL_INDEX - 1;
+        selectedRow = 7;
+        selectedCol = 0;
     }
     else 
     {
-        selectedRow = Board::MAX_ROW_INDEX - 1;
-        selectedCol = Board::MIN_COL_INDEX;
+        selectedRow = 0;
+        selectedCol = 7;
     }
 }
 
@@ -536,15 +544,28 @@ void endOfTurn()
     needPromote = false;
 	check = false;
 
+    legalMoves.clear();
+    chess->CalculateLegalMoves(legalMoves);
+
 	//chess->nextTurn();
-	if(chess->IsCheckMate())
+
+  
+
+	if(chess->IsCheck())
 	{
-		checkMate = true;
-	}
-	else if(chess->IsCheck())
-	{
-		check = true;
-	}
+        if (legalMoves.empty())
+        {
+            gameOver = true;
+        }
+        else 
+        {
+            check = true;
+        }
+
+    }else if (chess->IsDraw())
+    {
+        gameOver = true;
+    }
     
 	board_rotating = true;
 	updateTurn(chess->IsWhiteTurn());
@@ -554,29 +575,29 @@ void newAITurn()
 {
 	ChessPlayer* player = nullptr;
 	if (chess->IsWhiteTurn()) {
-		player = chess->GetWhitePlayer();
+		player = whitePlayer;
 	}
 	else {
-		player = chess->GetBlackPlayer();
+		player = blackPlayer;
 	}
 	
-	if (!player->IsAI() || chess->IsCheckMate()) 
+	if (!player->IsAI() || (legalMoves.empty())) 
 		return;
 
 	// decide and make the move
 	Move move;
-	bool moveMade = player->chooseAIMove(move);
+	bool moveMade = player->chooseAIMove(legalMoves, move);
 	if (!moveMade)
 	{
 		return; // TODO: if this is the case - what next? The chess engine should have detected a checkmate prior to this. 
 	}
 
-    chess->MakePlayerMove(move);
+    chess->MakeMove(move);
     endOfTurn();
 	Sleep(SLEEP_TIME_MILLISECONDS);
 
-    unsigned int startPosition = GetStartPos(move);
-    unsigned int endPosition = GetEndPos(move);
+    unsigned int startPosition =  GetStartPosition(move);
+    unsigned int endPosition = GetEndPosition(move);
 
     selectedRow = (startPosition >> 3);
     selectedCol = (startPosition & 7);
@@ -646,7 +667,7 @@ void displayFunction()
 
 			drawValidMoves();
 
-            //showWord(-300, WINDOW_HEIGHT / 2 - 24, "Material advantage: ");
+            showWord(-300, WINDOW_HEIGHT / 2 - 24, std::to_string((selectedRow << 3) | selectedCol));
 
 			if(needPromote)
 			{
@@ -661,7 +682,8 @@ void displayFunction()
 					string s = chess->IsWhiteTurn() == false ? "BLACK PIECE" : "WHITE PIECE";
 					showWord(-150, WINDOW_HEIGHT/2-24, s+" CHECKED!");
 				}
-				if(checkMate)
+
+				if(gameOver)
 				{
 					string s = chess->IsWhiteTurn() ? "BLACK PLAYER" : "WHITE PLAYER";
 					if (chess->IsCheck())
@@ -673,12 +695,12 @@ void displayFunction()
 					}
 					else
 					{
-						showWord(-100, WINDOW_HEIGHT / 2 - 24, "STALE MATE!");
 						showWord(-140, WINDOW_HEIGHT / 2 - 50, " DRAW!");
 						showWord(-150, -WINDOW_HEIGHT / 2 + 50, "Do you want to play again?");
 						showWord(-120, -WINDOW_HEIGHT / 2 + 25, "Yes (O)  or  No (X)");
 					}
 				}
+
 			}
 		}
     }
@@ -732,45 +754,60 @@ void keyFunction(unsigned char key, int x, int y)
     {
         case 'w':
         case 'W':
-            if(!needPromote && !checkMate && !verify && inGame && !board_rotating) key_W_pressed(chess->IsWhiteTurn());
+            if(!needPromote && !gameOver && !verify && inGame && !board_rotating) key_W_pressed(chess->IsWhiteTurn());
             break;
         case 'a':
         case 'A':
-            if(!needPromote && !checkMate && !verify && inGame && !board_rotating) key_A_pressed(chess->IsWhiteTurn());
+            if(!needPromote && !gameOver && !verify && inGame && !board_rotating) key_A_pressed(chess->IsWhiteTurn());
             break;
         case 's':
         case 'S':
-            if(!needPromote && !checkMate && !verify && inGame && !board_rotating) key_S_pressed(chess->IsWhiteTurn());
+            if(!needPromote && !gameOver && !verify && inGame && !board_rotating) key_S_pressed(chess->IsWhiteTurn());
             break;
         case 'd':
         case 'D':
-            if(!needPromote && !checkMate && !verify && inGame && !board_rotating) key_D_pressed(chess->IsWhiteTurn());
+            if(!needPromote && !gameOver && !verify && inGame && !board_rotating) key_D_pressed(chess->IsWhiteTurn());
             break;
         case ' ':
-            if (!needPromote && !checkMate && !verify && inGame && !board_rotating)
+            if (!needPromote && !gameOver && !verify && inGame && !board_rotating)
             {
-                
-                const Board& board = chess->GetChessBoard();
+                const unsigned startPosition = (selectedRow << 3) | selectedCol;
+                bool selectedIsWhite;
+                PieceType selectedPiece = chess->GetPieceAt(startPosition, selectedIsWhite);
+
                 if (selected)
                 {
-                    // the selected piece is being moved
-                    if (chess->InterpretMove(interpretedMove, selectedCol, selectedRow, moveToCol, moveToRow))
+                    const unsigned endPosition = (moveToRow << 3) | moveToCol;
+                    bool found = false;
+
+                    for (const auto& move : legalMoves)
                     {
-                        if (GetMoveType(interpretedMove) == MoveType::PROMOTION)
+                        if (GetStartPosition(move) == startPosition && GetEndPosition(move) == endPosition)
+                        {
+                            interpretedMove = move;
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    // the selected piece is being moved
+                    if (found)
+                    {
+                        if (GetMoveType(interpretedMove) == MoveType::promote)
                         {
                             needPromote = true;
                         }
 
                         if(!needPromote)
                         {
-                            chess->MakePlayerMove(interpretedMove);
+                            chess->MakeMove(interpretedMove);
                             endOfTurn();
                         }
                     }
 
                     selected = false;
                 }
-                else if (IsValid(board.C_At(selectedCol, selectedRow)) && IsWhite(board.C_At(selectedCol, selectedRow)) == chess->IsWhiteTurn())
+                else if (selectedPiece != PieceType::none && selectedIsWhite == chess->IsWhiteTurn())
                 {
                     // a piece is being selected 
                     selected = !selected;
@@ -789,10 +826,10 @@ void keyFunction(unsigned char key, int x, int y)
             else verify = true;
             break;
         case 'o': case 'O':
-            if(checkMate || verify) {delete chess; newGame(); verify = false;}
+            if(gameOver || verify) {delete chess; newGame(); verify = false;}
             break;
         case 'x': case 'X':
-			if(checkMate) 
+			if(gameOver) 
 			{ 
 				closeGame = true; 
 				delete chess;
@@ -806,8 +843,8 @@ void keyFunction(unsigned char key, int x, int y)
 		case 'q': case 'Q':
 			if(needPromote)
 			{
-                interpretedMove = SetPromoteMove(interpretedMove, PieceType::QUEEN);
-                chess->MakePlayerMove(interpretedMove);
+                interpretedMove = SetPromoteMove(interpretedMove, PieceType::queen);
+                chess->MakeMove(interpretedMove);
                 endOfTurn();
 				break;
 			}
@@ -815,8 +852,8 @@ void keyFunction(unsigned char key, int x, int y)
 		case 'r': case 'R':
 			if(needPromote)
 			{
-                interpretedMove = SetPromoteMove(interpretedMove, PieceType::ROOK);
-                chess->MakePlayerMove(interpretedMove);
+                interpretedMove = SetPromoteMove(interpretedMove, PieceType::rook);
+                chess->MakeMove(interpretedMove);
                 endOfTurn();
 				break;
 			}
@@ -824,8 +861,8 @@ void keyFunction(unsigned char key, int x, int y)
 		case 'b': case 'B':
 			if(needPromote)
 			{
-                interpretedMove = SetPromoteMove(interpretedMove, PieceType::BISHOP);
-                chess->MakePlayerMove(interpretedMove);
+                interpretedMove = SetPromoteMove(interpretedMove, PieceType::bishop);
+                chess->MakeMove(interpretedMove);
                 endOfTurn();
 				break;
 			}
@@ -833,8 +870,8 @@ void keyFunction(unsigned char key, int x, int y)
 		case 'k': case 'K':
 			if(needPromote)
 			{
-                interpretedMove = SetPromoteMove(interpretedMove, PieceType::KNIGHT);
-                chess->MakePlayerMove(interpretedMove);
+                interpretedMove = SetPromoteMove(interpretedMove, PieceType::knight);
+                chess->MakeMove(interpretedMove);
                 endOfTurn();
 				break;
 			}
@@ -843,7 +880,7 @@ void keyFunction(unsigned char key, int x, int y)
         case 'z':
 
             endOfTurn();
-            chess->Undo();
+            chess->UndoMove();
             break;
 		case 'c': case 'C':
 			//boardCopy = chess->getCopyOfBoard();
@@ -883,15 +920,19 @@ void initialize()
 
 void newGame()
 {
-    chess = new Game();
+    chess = new Chess();
+    ChessPlayer::setupPlayers(&whitePlayer, &blackPlayer, *chess);
+    chess->CalculateLegalMoves(legalMoves);
+
     selectedRow = 1; selectedCol = 1;
     moveToRow = 1; moveToCol = 1;
     selected = false;
     board_rotating = true;
-    rotation = 180;
+    rotation = 0;
     inGame = true;
     check = false;
-    checkMate = false;
+    gameOver = false;
+    draw = false;
     updateTurn(chess->IsWhiteTurn());
 }
 

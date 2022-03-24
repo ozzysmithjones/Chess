@@ -1,19 +1,10 @@
 #pragma once
+#include <unordered_map>
 #include <vector>
-#include <memory>
-#include "GameState.h"
-#include "Move.h"
+#include "Chess.h"
+#include "TranspositionTable.h"
 
-using namespace std;
-
-struct PieceInPostion
-{
-	Piece piece;
-	int col;
-	int row;
-};
-
-typedef vector<PieceInPostion> vecPieces;
+constexpr auto MAX_PLY = 11;
 
 int RowDiff(int position, int row);
 int CenterDiff(int position, bool maximise = true);
@@ -22,31 +13,39 @@ int PosDiff(int position, int other);
 class ChessPlayer
 {
 public:
-	static void		setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, GameState* gameState);
-	ChessPlayer(GameState* gameState, bool isWhite);
+	static void		setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, Chess& chess);
+	ChessPlayer(Chess& chess, bool isWhite);
+	~ChessPlayer();
 
 	void			SetAI(bool random, int depth);
 	bool			IsAI() { return isAI; }
-	unsigned int	getAllLivePieces(vecPieces& vpieces);
-	vector<Move>	getValidMovesForPiece(PieceInPostion pip);
-	bool			chooseAIMove(Move& moveToMake);
+	bool			chooseAIMove(std::vector<Move>& moves, Move& moveToMake);
 
 protected:
 
 	bool IsWhitePlayer() { return isWhite; }
-	int MiniMax(int depth, bool white, int alpha, int beta);
+	
 
-	virtual bool PrioritiseMoveA(const Move& a, const Move& b) const;
-	int EvaluatePosition(bool white, const Board& board, const std::vector<Move>& moves);
-	virtual int EvaluateSide(bool white, const Board& board);
+	int ScoreMove(const Move move);
+	void Sort(std::vector<Move>& moves, Move transpositionMove);
+	int Evaluate(const GameState& state, bool isWhite);
+	bool IsMovePromising(const Move move);
+	int32_t Quiescence(int alpha, int beta);
+	int32_t NegaMax(int alpha, int beta, int depth);
 
 private:
 
 	int			depth;
 	bool		random = false;
-	bool		isWhite;
+	const bool	isWhite;
 	bool		isAI;
-	Board*		board;
-	GameState* gameState;
+	Chess&		chess;
+
+	int ply = 0;
+	Move killerMoves[2][MAX_PLY]{ 0 }; //[Index][Ply]
+	unsigned historyMoveScores[6][64]{ 0 }; //[Piece][Move to square]
+	TranspositionTable* transpositionTable;
+
+	Move moveToPlay;
 };
 
