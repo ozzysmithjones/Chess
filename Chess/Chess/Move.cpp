@@ -1,39 +1,35 @@
+#include <iostream>
 #include "Move.h"
-#include <utility>
-#include <cassert>
+
+void PrintMove(const Move& move)
+{
+	if (move == 0)
+	{
+		std::wcout << L"[0]";
+	}
+	else
+	{
+		std::wcout << L"[" << squareNames[GetStartPosition(move)] << squareNames[GetEndPosition(move)] << L"]";
+	}
+}
 
 Move CreateMove(unsigned int position, unsigned int endPosition, MoveType moveType, PieceType pieceType)
 {
-	return position | (endPosition << 6) | ((unsigned int)moveType << 18) |
-		((unsigned int)pieceType << 21);
+	return position | (endPosition << 6) | ((unsigned int)moveType << 12) | ((unsigned int)pieceType << 15);
 }
 
 Move CreateMove(unsigned int position, unsigned int endPosition, MoveType moveType, PieceType pieceType, PieceType captureType)
 {
-	return  position | (endPosition << 6) | ((unsigned int)moveType << 18) |
-		((unsigned int)pieceType << 21) | ((unsigned int)captureType << 24);
+	return position | (endPosition << 6) | ((unsigned int)moveType << 12) | ((unsigned int)pieceType << 15) | ((unsigned int)captureType << 18);
 }
 
 Move CreateMove(unsigned int position, unsigned int endPosition, MoveType moveType, PieceType pieceType, PieceType captureType, PieceType promoteType)
 {
-	return position | (endPosition << 6) | ((unsigned int)moveType << 18) |
-		((unsigned int)pieceType << 21) | ((unsigned int)captureType << 24) | ((unsigned int)promoteType << 27);
+	return position | (endPosition << 6) | ((unsigned int)moveType << 12) | ((unsigned int)pieceType << 15) | ((unsigned int)captureType << 18) | ((unsigned int)promoteType << 21);
 }
 
-Move CreateMove(unsigned int position, unsigned int endPosition, unsigned int priority, MoveType moveType, PieceType pieceType, PieceType captureType, PieceType promoteType, bool isCheck, bool isPin)
+Move CreateMove(unsigned int position, unsigned int endPosition, MoveType moveType, PieceType pieceType, PieceType captureType, PieceType promoteType, bool isCheck, bool isPin)
 {
-	return position | (endPosition << 6) | (priority << 12) | ((unsigned int)moveType << 18) | ((unsigned int)pieceType << 21) | ((unsigned int)captureType << 24) | ((unsigned int)promoteType << 27)
-		| ((unsigned int)isCheck << 28) | ((unsigned int)isPin << 29);
+	return position | (endPosition << 6) | ((unsigned int)moveType << 12) | ((unsigned int)pieceType << 15) | ((unsigned int)captureType << 18) | ((unsigned int)promoteType << 21)
+		| ((unsigned int)isCheck << 22) | ((unsigned int)isPin << 23);
 }
-
-void SetPriority(Move& move, unsigned priority)
-{
-	move |= (priority << 12) & (unsigned int)MoveMask::priority;
-}
-
-Move SetPromoteMove(Move move, PieceType pieceType)
-{
-	move &= ~((unsigned)MoveMask::moveType | (unsigned)MoveMask::promoteType); //clear move type and promote type
-	return move | (((unsigned int)MoveType::promote << 18) | ((unsigned int)pieceType << 27));
-}
-

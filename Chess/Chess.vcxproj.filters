@@ -5,40 +5,40 @@
       <Filter>AI Code</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClCompile>
     <ClCompile Include="Model.cpp">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClCompile>
     <ClCompile Include="stb_image.cpp.cpp">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClCompile>
     <ClCompile Include="Chess\BitboardManipulation.cpp">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClCompile>
     <ClCompile Include="Chess\Chess.cpp">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClCompile>
     <ClCompile Include="Chess\Constants.cpp">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClCompile>
     <ClCompile Include="Chess\GameState.cpp">
-      <Filter>Core Code</Filter>
-    </ClCompile>
-    <ClCompile Include="Chess\KillerMoveTable.cpp">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClCompile>
     <ClCompile Include="Chess\Move.cpp">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClCompile>
     <ClCompile Include="Chess\Piece.cpp">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClCompile>
     <ClCompile Include="Chess\Random.cpp">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClCompile>
     <ClCompile Include="Chess\Zobrist.cpp">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
+    </ClCompile>
+    <ClCompile Include="TranspositionTable.cpp">
+      <Filter>Core Code %28Changed%29</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -46,44 +46,44 @@
       <Filter>AI Code</Filter>
     </ClInclude>
     <ClInclude Include="Model.h">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClInclude>
     <ClInclude Include="stb_image.h">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClInclude>
     <ClInclude Include="Chess\BitboardManipulation.h">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClInclude>
     <ClInclude Include="Chess\Chess.h">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClInclude>
     <ClInclude Include="Chess\Constants.h">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClInclude>
     <ClInclude Include="Chess\GameState.h">
-      <Filter>Core Code</Filter>
-    </ClInclude>
-    <ClInclude Include="Chess\KillerMoveTable.h">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClInclude>
     <ClInclude Include="Chess\Move.h">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClInclude>
     <ClInclude Include="Chess\Piece.h">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClInclude>
     <ClInclude Include="Chess\Random.h">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
     </ClInclude>
     <ClInclude Include="Chess\Zobrist.h">
-      <Filter>Core Code</Filter>
+      <Filter>Core Code %28Changed%29</Filter>
+    </ClInclude>
+    <ClInclude Include="TranspositionTable.h">
+      <Filter>Core Code %28Changed%29</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="AI Code">
       <UniqueIdentifier>{f3396701-8e19-4534-8876-75036b8ad636}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Core Code">
+    <Filter Include="Core Code %28Changed%29">
       <UniqueIdentifier>{b01adb74-7e6d-44e3-a6e2-c2b2ad1496e5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>

@@ -17,6 +17,7 @@ uint64_t Chess::bishopAttacks[64] = { 0 };
 uint64_t Chess::rookAttacks[64] = { 0 };
 uint64_t Chess::bishopBlockedAttacks[64][512] = { 0 };
 uint64_t Chess::rookBlockedAttacks[64][4096] = { 0 };
+//ThreeFoldTable Chess::threeFoldTable;
 
 
 /****************************************************************************\
@@ -78,7 +79,7 @@ Chess::Chess()
 	SetUpBoard();
 	InitSliderAttacks(true);
 	InitSliderAttacks(false);
-	
+
 	for (int square = 0; square < 64; square++)
 	{
 		pawnAttacks[1][square] = CalculatePawnAttacks(true, square);
@@ -86,6 +87,8 @@ Chess::Chess()
 		knightAttacks[square] = CalculateKnightAttacks(square);
 		kingAttacks[square] = CalculateKingAttacks(square);
 	}
+
+	irreversables.push(0);
 }
 
 Chess::~Chess()
@@ -102,6 +105,12 @@ const GameState& Chess::GetGameState() const
 {
 	return log.top();
 }
+
+void Chess::SetGameState(const GameState& gameState)
+{
+	log.top() = gameState;
+}
+
 
 #define UNICODE_PIECES 1
 
@@ -141,15 +150,15 @@ void Chess::PrintBoard(std::vector<Move>& moves) const
 
 			if (std::any_of(moves.begin(), moves.end(), [square](const Move& move) { return square == GetEndPosition(move); }))
 			{
-				std::wcout << (pieceType != PieceType::none ? L"X" : L"." )<< L" ";
+				std::wcout << (pieceType != PieceType::none ? L"X" : L".") << L" ";
 			}
 			else {
 
-			#if UNICODE_PIECES
+#if UNICODE_PIECES
 				std::wcout << unicodePieces[(int)pieceType] << L" ";
-			#else
+#else
 				std::wcout << ASCIIPieces[(int)pieceType];
-			#endif
+#endif
 			}
 
 			SetConsoleTextAttribute(handle, whiteForeground);
@@ -196,17 +205,17 @@ void Chess::PrintBoard() const
 			const WORD pieceColor = isWhitePiece ? whitePiece : isBlackPiece ? blackPiece : whiteForeground;
 			SetConsoleTextAttribute(handle, squareColor | pieceColor);
 
-			#if UNICODE_PIECES
+#if UNICODE_PIECES
 			std::wcout << unicodePieces[(int)pieceType] << " ";
-			#else
+#else
 			std::wcout << ASCIIPieces[(int)pieceType];
-			#endif
+#endif
 
 			SetConsoleTextAttribute(handle, whiteForeground);
-			
+
 		}
 
-		
+
 		std::wcout << L"\n";
 	}
 
@@ -221,8 +230,7 @@ void Chess::PrintBoard() const
 void Chess::CalculateLegalMoves(std::vector<Move>& moves)
 {
 	CalculateMoves(moves);
-	
-	
+
 	int playerkingSquare = GetKingSquare(isWhiteTurn);
 	int opponentKingSquare = GetKingSquare(!isWhiteTurn);
 
@@ -250,15 +258,15 @@ void Chess::CalculateLegalMoves(std::vector<Move>& moves)
 		UndoMove();
 		++i;
 	}
-	
+
 }
+
 
 void Chess::CalculateMoves(std::vector<Move>& moves) const
 {
 	const auto& state = log.top();
 	const uint64_t bothOccupancy = state.occupancy[0] | state.occupancy[1];
-	//pawn advancement:
-	
+
 	uint64_t pawn = state.pieces[(unsigned)PieceType::pawn - 1] & state.occupancy[isWhiteTurn];
 	CalculatePawnMoves(pawn, state.occupancy, moves, isWhiteTurn);
 
@@ -290,7 +298,7 @@ void Chess::CalculateMoves(std::vector<Move>& moves) const
 	{
 		const unsigned square = GetLeastIndex(queen);
 		PopBit(queen, square);
-		const uint64_t b = (GetRookAttacks(square, bothOccupancy) | GetBishopAttacks(square,bothOccupancy)) & ~state.occupancy[isWhiteTurn];
+		const uint64_t b = (GetRookAttacks(square, bothOccupancy) | GetBishopAttacks(square, bothOccupancy)) & ~state.occupancy[isWhiteTurn];
 		BitBoardToMoves(b, moves, PieceType::queen, square);
 	}
 
@@ -306,32 +314,56 @@ void Chess::CalculateMoves(std::vector<Move>& moves) const
 	{
 		//Castling moves:
 		const uint32_t castling = ~state.castlingRights;
+		const uint64_t rook = state.pieces[(unsigned)PieceType::rook - 1] & state.occupancy[isWhiteTurn];
 
 		if (isWhiteTurn)
 		{
-			if (!(bothOccupancy & wkCastleAttacked) && (castling & 1u) && !IsSquareAttacked(f1,isWhiteTurn) && !IsSquareAttacked(g1,isWhiteTurn))
+			if (!(bothOccupancy & wkCastleAttacked) && (castling & 1u) && !IsSquareAttacked(f1, isWhiteTurn) && !IsSquareAttacked(g1, isWhiteTurn) && (rook & (1ull << h1)))
 			{
 				moves.emplace_back(CreateMove(e1, g1, MoveType::castleKing, PieceType::king));
 			}
 
-			if (!(bothOccupancy & wqCastleAttacked) && (castling & 2u) && !IsSquareAttacked(d1, isWhiteTurn) && !IsSquareAttacked(c1, isWhiteTurn))
+			if (!(bothOccupancy & wqCastleAttacked) && (castling & 2u) && !IsSquareAttacked(d1, isWhiteTurn) && !IsSquareAttacked(c1, isWhiteTurn) && (rook & (1ull << a1)))
 			{
 				moves.emplace_back(CreateMove(e1, c1, MoveType::castleQueen, PieceType::king));
 			}
 		}
 		else
 		{
-			if (!(bothOccupancy & bkCastleAttacked) && (castling & 4u) && !IsSquareAttacked(f8, isWhiteTurn) && !IsSquareAttacked(g8, isWhiteTurn))
+			if (!(bothOccupancy & bkCastleAttacked) && (castling & 4u) && !IsSquareAttacked(f8, isWhiteTurn) && !IsSquareAttacked(g8, isWhiteTurn) && (rook & (1ull << h8)))
 			{
 				moves.emplace_back(CreateMove(e8, g8, MoveType::castleKing, PieceType::king));
 			}
 
-			if (!(bothOccupancy & bqCastleAttacked) && (castling & 8u) && !IsSquareAttacked(d8, isWhiteTurn) && !IsSquareAttacked(c8, isWhiteTurn))
+			if (!(bothOccupancy & bqCastleAttacked) && (castling & 8u) && !IsSquareAttacked(d8, isWhiteTurn) && !IsSquareAttacked(c8, isWhiteTurn) && (rook & (1ull << a8)))
 			{
 				moves.emplace_back(CreateMove(e8, c8, MoveType::castleQueen, PieceType::king));
 			}
 		}
 	}
+}
+
+void Chess::MakeNullMove()
+{
+	//push a new game state on the log.
+	log.push(log.top());
+	GameState& state = log.top();
+
+	if (state.enpassantSquare != NO_ENPASSANT)
+	{
+		state.zobristKey ^= zobrist->GetEnpassantSeed(state.enpassantSquare >> 3);
+	}
+
+	state.enpassantSquare = NO_ENPASSANT;
+	state.inCheck = false;
+
+	//shift to opposite color
+	state.zobristKey ^= zobrist->GetTurnSeed();
+	isWhiteTurn = !isWhiteTurn;
+
+	//store history for repetitions.
+	++repetitionIndex;
+	repetitionTable[repetitionIndex] = state.zobristKey;
 }
 
 void Chess::MakeMove(const Move move)
@@ -371,7 +403,7 @@ void Chess::MakeMove(const Move move)
 
 	state.zobristKey ^= zobrist->GetPieceSeed((unsigned int)pieceType - 1, startPosition, isWhiteTurn);
 	state.zobristKey ^= zobrist->GetPieceSeed((unsigned int)pieceType - 1, endPosition, isWhiteTurn);
-	
+
 	//Handle rook disallowing castling:
 	if (pieceType == PieceType::rook)
 	{
@@ -467,11 +499,11 @@ void Chess::MakeMove(const Move move)
 		break;
 
 	case MoveType::castleKing:
-		
+
 		{
 			uint32_t startRookSquare;
 			uint32_t endRookSquare;
-			
+
 			if (isWhiteTurn)
 			{
 				startRookSquare = h1;
@@ -482,7 +514,7 @@ void Chess::MakeMove(const Move move)
 				startRookSquare = h8;
 				endRookSquare = f8;
 			}
-			
+
 			PopBit(state.pieces[(unsigned int)PieceType::rook - 1], startRookSquare);
 			SetBit(state.pieces[(unsigned int)PieceType::rook - 1], endRookSquare);
 			PopBit(state.occupancy[isWhiteTurn], startRookSquare);
@@ -498,7 +530,7 @@ void Chess::MakeMove(const Move move)
 		{
 			uint32_t startRookSquare;
 			uint32_t endRookSquare;
-			
+
 			if (isWhiteTurn)
 			{
 				startRookSquare = a1;
@@ -524,17 +556,75 @@ void Chess::MakeMove(const Move move)
 
 	state.zobristKey ^= zobrist->GetTurnSeed();
 	isWhiteTurn = !isWhiteTurn;
+	
+	//store history for repetitions:
+	++repetitionIndex;
+	repetitionTable[repetitionIndex] = state.zobristKey;
+	
+	if (GetIsIrreversible(move))
+	{
+		irreversables.push(repetitionIndex);
+	}
 }
 
 void Chess::UndoMove()
 {
 	isWhiteTurn = !isWhiteTurn;
 	log.pop();
+
+	if (irreversables.top() == repetitionIndex)
+	{
+		irreversables.pop();
+	}
+
+	--repetitionIndex;
 }
 
 bool Chess::IsCheck() const
 {
 	return log.top().inCheck;
+}
+
+bool Chess::IsDraw() const
+{
+
+	if ((repetitionIndex - irreversables.top()) >= 50) // 50 move rule.
+	{
+		return true;
+	}
+
+	for (std::size_t i = irreversables.top(); i < repetitionIndex; ++i)
+	{
+		if (repetitionTable[i] == repetitionTable[repetitionIndex])
+		{
+			return true;
+		}
+	}
+	
+	return false;
+}
+
+uint64_t Chess::GetPieceAttacks(PieceType pieceType, int square, uint64_t occupancy, bool isWhite)
+{
+	switch (pieceType)
+	{
+	case PieceType::none:
+		return 0ull;
+	case PieceType::pawn:
+		return GetPawnAttacks(isWhite, square);
+	case PieceType::knight:
+		return GetKnightAttacks(square);
+	case PieceType::bishop:
+		return GetBishopAttacks(square, occupancy);
+	case PieceType::rook:
+		return GetRookAttacks(square, occupancy);
+	case PieceType::queen:
+		return GetBishopAttacks(square, occupancy) | GetRookAttacks(square, occupancy);
+	case PieceType::king:
+		return GetKingAttacks(square);
+	}
+
+	return 0ull;
 }
 
 uint64_t Chess::GetPawnAttacks(bool isWhite, int square) const
@@ -579,12 +669,12 @@ void Chess::SetUpBoard()
 	game.occupancy[0] = 0x000000000000ffffULL;
 	game.occupancy[1] = 0xffff000000000000ULL;
 
-	game.pieces[(int)PieceType::pawn - 1]  = 0x00ff00000000ff00ULL;
-	game.pieces[(int)PieceType::knight - 1] = 0x4200000000000042ULL;
-	game.pieces[(int)PieceType::bishop - 1] = 0x2400000000000024ULL;
-	game.pieces[(int)PieceType::rook - 1] = 0x8100000000000081ULL;
-	game.pieces[(int)PieceType::queen - 1] = 0x800000000000008ULL;
-	game.pieces[(int)PieceType::king - 1] = 0x1000000000000010ULL;
+	game.pieces[(int)PieceType::pawn - 1]    = 0x00ff00000000ff00ULL;
+	game.pieces[(int)PieceType::knight - 1]  = 0x4200000000000042ULL;
+	game.pieces[(int)PieceType::bishop - 1]  = 0x2400000000000024ULL;
+	game.pieces[(int)PieceType::rook - 1]    = 0x8100000000000081ULL;
+	game.pieces[(int)PieceType::queen - 1]   = 0x800000000000008ULL;
+	game.pieces[(int)PieceType::king - 1]    = 0x1000000000000010ULL;
 
 	game.zobristKey = zobrist->CalculateZobristKey(true, game);
 }
@@ -605,7 +695,7 @@ PieceType Chess::GetPieceTypeAt(int square) const
 
 PieceType Chess::GetPieceAt(int square, bool& isWhite) const
 {
-	
+
 	const uint64_t b = (1ull << square);
 	const auto& pieces = log.top().pieces;
 
@@ -627,7 +717,7 @@ PieceType Chess::GetPieceAt(int square, bool& isWhite) const
 inline int Chess::GetKingSquare(bool isWhite)
 {
 	GameState& game = log.top();
-	return GetLeastIndex(game.pieces[(int)PieceType::king-1] & game.occupancy[isWhite]);
+	return GetLeastIndex(game.pieces[(int)PieceType::king - 1] & game.occupancy[isWhite]);
 }
 
 void Chess::AddPotentialPromoteMove(std::vector<Move>& moves, Move move, int rank, int promotionRank) const
@@ -662,7 +752,7 @@ bool Chess::IsSquareAttacked(int square, bool isWhite) const
 {
 	const uint64_t b = (1ull << square);
 	const GameState& state = log.top();
-	uint64_t occupancy = state.occupancy[0] | state.occupancy[1];
+	const uint64_t occupancy = state.occupancy[0] | state.occupancy[1];
 
 	uint64_t potential = GetPawnAttacks(isWhite, square);
 	if (state.pieces[(unsigned)PieceType::pawn - 1] & state.occupancy[!isWhite] & potential)
@@ -671,8 +761,8 @@ bool Chess::IsSquareAttacked(int square, bool isWhite) const
 	potential = GetKnightAttacks(square);
 	if (state.pieces[(unsigned)PieceType::knight - 1] & state.occupancy[!isWhite] & potential)
 		return true;
-	
-	const uint64_t bishopPotential = GetBishopAttacks(square,occupancy);
+
+	const uint64_t bishopPotential = GetBishopAttacks(square, occupancy);
 	if (state.pieces[(unsigned)PieceType::bishop - 1] & state.occupancy[!isWhite] & bishopPotential)
 		return true;
 
@@ -725,7 +815,6 @@ bool Chess::IsSquareAttackedBy(int square, bool isWhite, PieceType pieceType, ui
 }
 
 
-
 void Chess::CalculatePawnMoves(uint64_t pawn, const uint64_t* occupancies, std::vector<Move>& moves, const bool isWhite) const
 {
 	//Figure out forward moves:
@@ -741,7 +830,7 @@ void Chess::CalculatePawnMoves(uint64_t pawn, const uint64_t* occupancies, std::
 		advanced = ((forward & rank3) >> 8) & empty; // advanced pawn
 		promoteRank = 0;
 	}
-	else 
+	else
 	{
 		forward = (pawn << 8) & empty;
 		advanced = ((forward & rank6) << 8) & empty; // advanced pawn
@@ -771,7 +860,7 @@ void Chess::CalculatePawnMoves(uint64_t pawn, const uint64_t* occupancies, std::
 		if (enpassantAttacks)
 		{
 			const uint32_t endSquare = GetLeastIndex(enpassantAttacks);
-			const bool higher = (endSquare >> 3) > (square >> 3);
+			const bool higher = (endSquare & 7) > (square & 7);
 			moves.emplace_back(CreateMove(square, endSquare, higher ? MoveType::enpassantHigher : MoveType::enpassantLower, PieceType::pawn));
 		}
 
@@ -781,7 +870,7 @@ void Chess::CalculatePawnMoves(uint64_t pawn, const uint64_t* occupancies, std::
 		{
 			forwards = ((b >> 8)) & forward;
 		}
-		else 
+		else
 		{
 			forwards = ((b << 8)) & forward;
 		}
@@ -822,7 +911,7 @@ void Chess::BitBoardToMoves(const uint64_t bitboard, std::vector<Move>& moves, c
 	while (quiet != 0)
 	{
 		const unsigned endSquare = GetLeastIndex(quiet);
-		moves.push_back(CreateMove(originSquare, endSquare,MoveType::normal, pieceType));
+		moves.push_back(CreateMove(originSquare, endSquare, MoveType::normal, pieceType));
 		PopBit(quiet, endSquare);
 	}
 
@@ -849,8 +938,8 @@ uint64_t Chess::CalculatePawnAttacks(bool isWhite, int square)
 	}
 	else
 	{
-		attacks |= (bitboard & notHFile) << 7;
-		attacks |= (bitboard & notAFile) << 9;
+		attacks |= (bitboard & notAFile) << 7;
+		attacks |= (bitboard & notHFile) << 9;
 	}
 
 	return attacks;
@@ -901,14 +990,10 @@ uint64_t Chess::CalculateKingAttacks(int square)
 uint64_t Chess::CalculateBishopAttacks(int square)
 {
 	uint64_t attacks = 0ull;
-	uint64_t bitboard = 0ull;
-
-	//Place bishop on the bit board.
-	SetBit(bitboard, square);
 
 	int y, x;
-	int startY = (square >> 3);
-	int startX = (square & 7);
+	int startY = (square /8);
+	int startX = (square % 8);
 
 	for (y = startY + 1, x = startX + 1; y < 7 && x < 7; y++, x++)
 	{
@@ -936,13 +1021,10 @@ uint64_t Chess::CalculateBishopAttacks(int square)
 uint64_t Chess::CalculateRookAttacks(int square)
 {
 	uint64_t attacks = 0ull;
-	uint64_t bitboard = 0ull;
-
-	SetBit(bitboard, square);
 
 	int y, x;
-	int startY = (square >> 3);
-	int startX = (square & 7);
+	int startY = (square / 8);
+	int startX = (square % 8);
 
 	for (y = startY + 1, x = startX; y < 7; y++)
 	{
@@ -970,14 +1052,10 @@ uint64_t Chess::CalculateRookAttacks(int square)
 uint64_t Chess::CalculateBlockedBishopAttacks(int square, uint64_t occupancy)
 {
 	uint64_t attacks = 0ull;
-	uint64_t bitboard = 0ull;
-
-	//Place bishop on the bit board.
-	SetBit(bitboard, square);
 
 	int y, x;
-	int startY = (square >> 3);
-	int startX = (square & 7);
+	int startY = square / 8;
+	int startX = square % 8;
 
 	for (y = startY + 1, x = startX + 1; y <= 7 && x <= 7; y++, x++)
 	{
@@ -1017,15 +1095,12 @@ uint64_t Chess::CalculateBlockedBishopAttacks(int square, uint64_t occupancy)
 uint64_t Chess::CalculateBlockedRookAttacks(int square, uint64_t occupancy)
 {
 	uint64_t attacks = 0ull;
-	uint64_t bitboard = 0ull;
-
-	SetBit(bitboard, square);
 
 	int y, x;
-	int startY = (square >> 3);
-	int startX = (square & 7);
+	int startY = square / 8;
+	int startX = square % 8;
 
-	for (y = startY + 1, x = startX; y < 7; y++)
+	for (y = startY + 1, x = startX; y <= 7; y++)
 	{
 		const uint32_t index = ToIndex(x, y);
 		attacks |= (1ull << index);
@@ -1033,7 +1108,7 @@ uint64_t Chess::CalculateBlockedRookAttacks(int square, uint64_t occupancy)
 			break;
 	}
 
-	for (y = startY - 1, x = startX; y > 0; y--)
+	for (y = startY - 1, x = startX; y >= 0; y--)
 	{
 		const uint32_t index = ToIndex(x, y);
 		attacks |= (1ull << index);
@@ -1041,7 +1116,7 @@ uint64_t Chess::CalculateBlockedRookAttacks(int square, uint64_t occupancy)
 			break;
 	}
 
-	for (x = startX + 1, y = startY; x < 7; x++)
+	for (x = startX + 1, y = startY; x <= 7; x++)
 	{
 		const uint32_t index = ToIndex(x, y);
 		attacks |= (1ull << index);
@@ -1049,7 +1124,7 @@ uint64_t Chess::CalculateBlockedRookAttacks(int square, uint64_t occupancy)
 			break;
 	}
 
-	for (x = startX - 1, y = startY; x > 0; x--)
+	for (x = startX - 1, y = startY; x >= 0; x--)
 	{
 		const uint32_t index = ToIndex(x, y);
 		attacks |= (1ull << index);
@@ -1127,21 +1202,27 @@ uint64_t Chess::CalculateMagicNumber(int square, int attackCount, bool isBishop)
 	return 0ull;
 }
 
+
+
+
 void Chess::GenerateMagicNumbers()
 {
-	/*
+	
 	for (int i = 0; i < 64; i++)
 	{
 		std::wcout << L"0x" << std::hex << CalculateMagicNumber(i, rookAttackCountBySquare[i], false) << L",\n";
 	}
-	*/
+	
+	
 
 	std::wcout << "\n\n";
 
+	
 	for (int i = 0; i < 64; i++)
 	{
 		std::wcout << L"0x" << std::hex << CalculateMagicNumber(i, bishopAttackCountBySquare[i], true) << L",\n";
 	}
+	
 }
 
 
@@ -1154,20 +1235,21 @@ void Chess::InitSliderAttacks(bool isBishop)
 	{
 		attacks[square] = isBishop ? CalculateBishopAttacks(square) : CalculateRookAttacks(square);
 		const uint64_t attack = attacks[square];
-		const int occupancyPermutations = (1ull << attackCounts[square]);
+		const int attackCount = GetBitCount(attack);
+		const int occupancyPermutations = (1ull << attackCount);
 
 		for (int j = 0; j < occupancyPermutations; j++)
 		{
-			const uint64_t occupancy = CalculatePermutation(j, attackCounts[square], attack);
+			const uint64_t occupancy = CalculatePermutation(j, attackCount, attack);
 
 			if (isBishop)
 			{
-				const int magicIndex = (int)((occupancy * bishopMagicNumbers[square]) >> (64 - attackCounts[square]));
+				const int magicIndex = (int)((occupancy * bishopMagicNumbers[square]) >> (64 - attackCount));
 				bishopBlockedAttacks[square][magicIndex] = CalculateBlockedBishopAttacks(square, occupancy);
 			}
 			else
 			{
-				const int magicIndex = (int)((occupancy * rookMagicNumbers[square]) >> (64 - attackCounts[square]));
+				const int magicIndex = (int)((occupancy * rookMagicNumbers[square]) >> (64 - attackCount));
 				rookBlockedAttacks[square][magicIndex] = CalculateBlockedRookAttacks(square, occupancy);
 			}
 		}

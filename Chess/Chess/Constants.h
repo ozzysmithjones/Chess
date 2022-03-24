@@ -1,6 +1,9 @@
 ﻿#pragma once
 #include <stdint.h>
 
+#define INFINITY (INT_MAX - 52)
+#define UNKNOWN (INT_MAX)
+
 #pragma region Squares
 
 enum
@@ -16,16 +19,16 @@ enum
 };
 
 
-static const char* coordStringBySquare[]
+static const wchar_t* squareNames[]
 {
-	"a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
-	"a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
-	"a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
-	"a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
-	"a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
-	"a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
-	"a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
-	"a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
+	L"a8", L"b8", L"c8", L"d8", L"e8", L"f8", L"g8", L"h8",
+	L"a7", L"b7", L"c7", L"d7", L"e7", L"f7", L"g7", L"h7",
+	L"a6", L"b6", L"c6", L"d6", L"e6", L"f6", L"g6", L"h6",
+	L"a5", L"b5", L"c5", L"d5", L"e5", L"f5", L"g5", L"h5",
+	L"a4", L"b4", L"c4", L"d4", L"e4", L"f4", L"g4", L"h4",
+	L"a3", L"b3", L"c3", L"d3", L"e3", L"f3", L"g3", L"h3",
+	L"a2", L"b2", L"c2", L"d2", L"e2", L"f2", L"g2", L"h2",
+	L"a1", L"b1", L"c1", L"d1", L"e1", L"f1", L"g1", L"h1",
 };
 
 constexpr uint64_t notAFile = 0xfefefefefefefefeULL;
@@ -48,7 +51,6 @@ constexpr uint64_t wkCastleAttacked = 0x6000000000000000ULL;
 constexpr uint64_t wqCastleAttacked = 0x0c00000000000000ULL;
 constexpr uint64_t bkCastleAttacked = 0x0000000000000060ULL;
 constexpr uint64_t bqCastleAttacked = 0x000000000000000cULL;
-constexpr uint64_t centre			= 0x0000001818000000ULL;
 
 
 #pragma endregion
@@ -59,6 +61,18 @@ static constexpr char ASCIIPieces[]{ ' ', 'p', 'N', 'B', 'R', 'Q', '@' };
 
 //UNICODE pieces:
 static const wchar_t* const unicodePieces[]{ L" ", L"♙", L"♘", L"♗", L"♖", L"♕", L"♔" };
+
+static constexpr int knightAttackCountBySquare[]
+{
+	2, 3, 4, 4, 4, 4, 3, 2,
+	3, 4, 6, 6, 6, 6, 4, 3,
+	4, 6, 8, 8, 8, 8, 6, 4,
+	4, 6, 8, 8, 8, 8, 6, 4,
+	4, 6, 8, 8, 8, 8, 6, 4,
+	4, 6, 8, 8, 8, 8, 6, 4,
+	3, 4, 6, 6, 6, 6, 4, 3,
+	2, 3, 4, 4, 4, 4, 3, 2,
+};
 
 //sliding piece Caching.
 static constexpr int bishopAttackCountBySquare[]
@@ -95,6 +109,128 @@ static constexpr int queenAttackCountBySquare[]
 	16, 15, 17, 17, 17, 17, 15, 16,
 	16, 15, 15, 15, 15, 15, 15, 16,
 	18, 16, 16, 16, 16, 16, 16, 18,
+};
+
+
+//For Evaluation:
+
+static constexpr int pieceScores[6]{
+	100,      // pawn score
+	300,      // knight scrore
+	350,      // bishop score
+	500,      // rook score
+    900,      // queen score
+  10000,      // king score
+};
+
+static constexpr int pawnPositionalScore[64]
+{
+	90,  90,  90,  90,  90,  90,  90,  90,
+	30,  30,  30,  40,  40,  30,  30,  30,
+	20,  20,  20,  30,  30,  30,  20,  20,
+	10,  10,  10,  20,  20,  10,  10,  10,
+	 5,   5,  10,  20,  22,   5,  5,   5,
+	 0,   0,   0,   5,   5,   0,   0,   0,
+	 0,   0,   0, -10, -10,   0,   0,   0,
+	 0,   0,   0,   0,   0,   0,   0,   0
+};
+
+static constexpr int knightPositionalScore[64]
+{
+	-5,   0,   0,   0,   0,   0,   0,  -5,
+	-5,   0,   0,  10,  10,   0,   0,  -5,
+	-5,   5,  20,  20,  20,  20,   5,  -5,
+	-5,  10,  20,  30,  30,  20,  10,  -5,
+	-5,  10,  20,  30,  30,  20,  10,  -5,
+	-5,   5,  20,  10,  10,  20,   5,  -5,
+	-5,   0,   0,   0,   0,   0,   0,  -5,
+	-5, -10,   0,   0,   0,   0, -10,  -5
+};
+
+// bishop positional score
+static constexpr int bishopPositionalScore[64]
+{
+	 0,   0,   0,   0,   0,   0,   0,   0,
+	 0,   0,   0,   0,   0,   0,   0,   0,
+	 0,   0,   0,  10,  10,   0,   0,   0,
+	 0,   5,  10,  20,  20,  10,   5,   0,
+	 0,  10,  10,  20,  20,  10,  10,   0,
+	 5,  10,   0, -10,  -10,  0,  10,   5,
+	 0,  30,   0,   0,   0,   0,  30,   0,
+	 0,   0, -10,   0,   0, -10,   0,   0
+
+};
+
+// rook positional score
+static constexpr int rookPositionalScore[64] =
+{
+	50,  50,  50,  50,  50,  50,  50,  50,
+	50,  50,  50,  50,  50,  50,  50,  50,
+	 0,   0,  10,  20,  20,  10,   0,   0,
+	 0,   0,  10,  20,  20,  10,   0,   0,
+	 0,   0,  10,  20,  20,  10,   0,   0,
+	 0,   0,  10,  20,  20,  10,   0,   0,
+	 0,   0,  10,  20,  20,  10,   0,   0,
+	 0,   0,   0,  20,  20,   0,   0,   0
+
+};
+
+// king positional score
+static constexpr int queenPositionalScore[64] =
+{
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+};
+
+
+// king positional score
+static constexpr int kingPositionalScoreMid[64] =
+{
+	 0,   0,   0,   0,   0,   0,   0,   0,
+	 0,   0,   0,   0,   0,   0,   0,   0,
+	 0,   0,   0,   0,   0,   0,   0,   0,
+	 0,   0,   0,   0,   0,   0,   0,   0,
+	 0,   0,   0,   0,   0,   0,   0,   0,
+	 0,   0,   0,   0,   0,   0,   0,   0,
+	 0,   5,- 25, -50,  -50, -25,   5,  0,
+	 0,   5,  35,  -15, -15,  -15,  40,   0,
+};
+// king positional score
+static constexpr int kingPositionalScoreLate[64] =
+{
+	 -5,   0,   0,   0,   0,   0,   0,  -5,
+	 0,     0,   5,   5,   5,   5,   0,   0,
+	 0,     5,   5,  10,  10,   5,   5,   0,
+	 0,     5,  10,  20,  20,  10,   5,   0,
+	 0,     5,  10,  20,  20,  10,   5,   0,
+	 0,     0,   5,  10,  10,   5,   0,   0,
+	 -5,    0,   5,   5,   5,   5,   0,  -5,
+	 -10,  -5,   0,   0,   0,   0,  -5, -10
+};
+
+
+static constexpr const int* PositionalScores[7]
+{
+	pawnPositionalScore, knightPositionalScore, bishopPositionalScore, rookPositionalScore, queenPositionalScore, kingPositionalScoreMid, kingPositionalScoreLate
+};
+
+// mirror positional score tables for opposite side
+static constexpr int mirror[64] =
+{
+	a1, b1, c1, d1, e1, f1, g1, h1,
+	a2, b2, c2, d2, e2, f2, g2, h2,
+	a3, b3, c3, d3, e3, f3, g3, h3,
+	a4, b4, c4, d4, e4, f4, g4, h4,
+	a5, b5, c5, d5, e5, f5, g5, h5,
+	a6, b6, c6, d6, e6, f6, g6, h6,
+	a7, b7, c7, d7, e7, f7, g7, h7,
+	a8, b8, c8, d8, e8, f8, g8, h8
 };
 
 static constexpr uint64_t rookMagicNumbers[64]

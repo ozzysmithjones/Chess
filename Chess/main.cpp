@@ -102,7 +102,7 @@ bool    selected = false;
 bool    board_rotating = true;
 bool    ai_moving = false;
 int     rotation = 0;
-bool    check = false, checkMate = false;
+bool    check = false, draw = false, gameOver = false;
 bool    closeGame = false;
 bool	needPromote = false;
 
@@ -548,17 +548,24 @@ void endOfTurn()
     chess->CalculateLegalMoves(legalMoves);
 
 	//chess->nextTurn();
+
+  
+
 	if(chess->IsCheck())
 	{
         if (legalMoves.empty())
         {
-            checkMate = true;
+            gameOver = true;
         }
         else 
         {
             check = true;
         }
-	}
+
+    }else if (chess->IsDraw())
+    {
+        gameOver = true;
+    }
     
 	board_rotating = true;
 	updateTurn(chess->IsWhiteTurn());
@@ -675,7 +682,8 @@ void displayFunction()
 					string s = chess->IsWhiteTurn() == false ? "BLACK PIECE" : "WHITE PIECE";
 					showWord(-150, WINDOW_HEIGHT/2-24, s+" CHECKED!");
 				}
-				if(checkMate)
+
+				if(gameOver)
 				{
 					string s = chess->IsWhiteTurn() ? "BLACK PLAYER" : "WHITE PLAYER";
 					if (chess->IsCheck())
@@ -687,12 +695,12 @@ void displayFunction()
 					}
 					else
 					{
-						showWord(-100, WINDOW_HEIGHT / 2 - 24, "STALE MATE!");
 						showWord(-140, WINDOW_HEIGHT / 2 - 50, " DRAW!");
 						showWord(-150, -WINDOW_HEIGHT / 2 + 50, "Do you want to play again?");
 						showWord(-120, -WINDOW_HEIGHT / 2 + 25, "Yes (O)  or  No (X)");
 					}
 				}
+
 			}
 		}
     }
@@ -746,22 +754,22 @@ void keyFunction(unsigned char key, int x, int y)
     {
         case 'w':
         case 'W':
-            if(!needPromote && !checkMate && !verify && inGame && !board_rotating) key_W_pressed(chess->IsWhiteTurn());
+            if(!needPromote && !gameOver && !verify && inGame && !board_rotating) key_W_pressed(chess->IsWhiteTurn());
             break;
         case 'a':
         case 'A':
-            if(!needPromote && !checkMate && !verify && inGame && !board_rotating) key_A_pressed(chess->IsWhiteTurn());
+            if(!needPromote && !gameOver && !verify && inGame && !board_rotating) key_A_pressed(chess->IsWhiteTurn());
             break;
         case 's':
         case 'S':
-            if(!needPromote && !checkMate && !verify && inGame && !board_rotating) key_S_pressed(chess->IsWhiteTurn());
+            if(!needPromote && !gameOver && !verify && inGame && !board_rotating) key_S_pressed(chess->IsWhiteTurn());
             break;
         case 'd':
         case 'D':
-            if(!needPromote && !checkMate && !verify && inGame && !board_rotating) key_D_pressed(chess->IsWhiteTurn());
+            if(!needPromote && !gameOver && !verify && inGame && !board_rotating) key_D_pressed(chess->IsWhiteTurn());
             break;
         case ' ':
-            if (!needPromote && !checkMate && !verify && inGame && !board_rotating)
+            if (!needPromote && !gameOver && !verify && inGame && !board_rotating)
             {
                 const unsigned startPosition = (selectedRow << 3) | selectedCol;
                 bool selectedIsWhite;
@@ -818,10 +826,10 @@ void keyFunction(unsigned char key, int x, int y)
             else verify = true;
             break;
         case 'o': case 'O':
-            if(checkMate || verify) {delete chess; newGame(); verify = false;}
+            if(gameOver || verify) {delete chess; newGame(); verify = false;}
             break;
         case 'x': case 'X':
-			if(checkMate) 
+			if(gameOver) 
 			{ 
 				closeGame = true; 
 				delete chess;
@@ -913,7 +921,7 @@ void initialize()
 void newGame()
 {
     chess = new Chess();
-    ChessPlayer::setupPlayers(&whitePlayer, &blackPlayer, chess);
+    ChessPlayer::setupPlayers(&whitePlayer, &blackPlayer, *chess);
     chess->CalculateLegalMoves(legalMoves);
 
     selectedRow = 1; selectedCol = 1;
@@ -923,7 +931,8 @@ void newGame()
     rotation = 0;
     inGame = true;
     check = false;
-    checkMate = false;
+    gameOver = false;
+    draw = false;
     updateTurn(chess->IsWhiteTurn());
 }
 

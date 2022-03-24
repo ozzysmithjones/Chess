@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <stack>
+#include <array>
 #include <vector>
 #include "Piece.h"
 #include "Constants.h"
@@ -19,19 +20,23 @@ public:
 
 	bool IsWhiteTurn() const;
 	const GameState& GetGameState() const;
+	void SetGameState(const GameState& gameState);
 
 	//For Input/Output:
 	PieceType GetPieceTypeAt(int square) const;
 	PieceType GetPieceAt(int square, bool& isWhite) const;
 	void PrintBoard(std::vector<Move>& moves) const;
 	void PrintBoard() const;
-	
+
 	//Making Moves:
+	void MakeNullMove();
 	void MakeMove(const Move move);
 	void UndoMove();
 	void CalculateLegalMoves(std::vector<Move>& moves);
 	bool IsCheck() const;
+	bool IsDraw() const;
 
+	uint64_t GetPieceAttacks(PieceType pieceType,int square, uint64_t occupancy, bool isWhite);
 	uint64_t GetPawnAttacks(bool isWhite, int square) const;
 	uint64_t GetKnightAttacks(int square) const;
 	uint64_t GetBishopAttacks(int square, uint64_t occupancy) const;
@@ -42,10 +47,9 @@ public:
 
 private:
 
-	
 	void CalculateMoves(std::vector<Move>& moves) const;
 	void SetUpBoard();
-	
+
 	inline int GetKingSquare(bool isWhite);
 
 	void AddPotentialPromoteMove(std::vector<Move>& moves, Move move, int rank, int promotionRank) const;
@@ -84,4 +88,8 @@ private:
 	bool isWhiteTurn = true;
 	std::stack<GameState> log;
 	Zobrist* zobrist;
+
+	std::size_t repetitionIndex = 0;
+	uint64_t repetitionTable[300]{ 0 };
+	std::stack<std::size_t> irreversables;
 };

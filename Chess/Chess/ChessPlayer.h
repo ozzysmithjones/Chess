@@ -1,19 +1,21 @@
 #pragma once
+#include <unordered_map>
 #include <vector>
-#include <memory>
 #include "Chess.h"
+#include "TranspositionTable.h"
 
+constexpr auto MAX_PLY = 11;
 
 int RowDiff(int position, int row);
 int CenterDiff(int position, bool maximise = true);
 int PosDiff(int position, int other);
 
-
 class ChessPlayer
 {
 public:
-	static void		setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, Chess* chess);
-	ChessPlayer(Chess* chess, bool isWhite);
+	static void		setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, Chess& chess);
+	ChessPlayer(Chess& chess, bool isWhite);
+	~ChessPlayer();
 
 	void			SetAI(bool random, int depth);
 	bool			IsAI() { return isAI; }
@@ -22,19 +24,28 @@ public:
 protected:
 
 	bool IsWhitePlayer() { return isWhite; }
+	
 
-	void PrioritiseMoves(std::vector<Move>& moves);
-	int NegaMax(int depth, int alpha, int beta);
-	int EvaluatePosition();
+	int ScoreMove(const Move move);
+	void Sort(std::vector<Move>& moves, Move transpositionMove);
+	int Evaluate(const GameState& state, bool isWhite);
+	bool IsMovePromising(const Move move);
+	int32_t Quiescence(int alpha, int beta);
+	int32_t NegaMax(int alpha, int beta, int depth);
 
 private:
 
-
-
 	int			depth;
 	bool		random = false;
-	bool		isWhite;
+	const bool	isWhite;
 	bool		isAI;
-	Chess*		chess;
+	Chess&		chess;
+
+	int ply = 0;
+	Move killerMoves[2][MAX_PLY]{ 0 }; //[Index][Ply]
+	unsigned historyMoveScores[6][64]{ 0 }; //[Piece][Move to square]
+	TranspositionTable* transpositionTable;
+
+	Move moveToPlay;
 };
 
