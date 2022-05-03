@@ -3,14 +3,17 @@
 #include <iostream>
 #include "ChessPlayer.h"
 
+void InitEvaluationMasks();
 
 void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, Chess& chess)
 {
 	*playerBlack = new ChessPlayer(chess, false);
-	(*playerBlack)->SetAI(false, 8);
+	(*playerBlack)->SetAI(false, 6);
 
 	*playerWhite = new ChessPlayer(chess, true);
-	(*playerWhite)->SetAI(false, 8);
+	(*playerWhite)->SetAI(false, 6);
+
+	InitEvaluationMasks();
 }
 
 ChessPlayer::ChessPlayer(Chess& chess, bool isWhite)
@@ -121,7 +124,10 @@ int ChessPlayer::ScoreMove(const Move move)
 
 	const int32_t startPosition = GetStartPosition(move);
 	const int32_t endPosition = GetEndPosition(move);
-	score += PositionalScores[piece][endPosition] - PositionalScores[piece][startPosition];
+
+	//score += PositionalScores[piece][endPosition] - PositionalScores[piece][startPosition];
+	score += (chess.GetAttackCount(chess.IsWhiteTurn(), endPosition) - chess.GetAttackCount(!chess.IsWhiteTurn(), endPosition)) * 10;
+	score += (chess.GetAttackCount(!chess.IsWhiteTurn(), startPosition) - chess.GetAttackCount(chess.IsWhiteTurn(), startPosition)) * 10;
 	score += GetIsCheck(move) ? 100 : 0;
 	return score;
 }
@@ -166,6 +172,361 @@ void ChessPlayer::Sort(std::vector<Move>& moves, Move transpositionMove)
 	}
 }
 
+const int isolatedPawnPenalty = 10;
+const int doubledPawnPenalty = 10;
+const int passedPawnBonus[8]{ 0, 5, 10, 20, 35, 60, 100, 200 };
+
+constexpr uint64_t files[8]
+{
+	0x0101010101010101,
+	0x0202020202020202,
+	0x0404040404040404,
+	0x0808080808080808,
+	0x1010101010101010,
+	0x2020202020202020,
+	0x4040404040404040,
+	0x8080808080808080,
+};
+
+constexpr uint64_t ranks[8]
+{
+	0x00000000000000ff,
+	0x000000000000ff00,
+	0x0000000000ff0000,
+	0x00000000ff000000,
+	0x000000ff00000000,
+	0x0000ff0000000000,
+	0x00ff000000000000,
+	0xff00000000000000,
+};
+
+constexpr uint64_t isolatedPawnFiles[8]
+{
+	0x0202020202020202,
+	0x0505050505050505,
+	0x0a0a0a0a0a0a0a0a,
+	0x1414141414141414,
+	0x2828282828282828,
+	0x5050505050505050,
+	0xa0a0a0a0a0a0a0a0,
+	0x4040404040404040,
+};
+
+
+constexpr uint64_t passedPawnMasks[2][64]
+{
+	0x303030303030300,
+	0x707070707070700,
+	0xe0e0e0e0e0e0e00,
+	0x1c1c1c1c1c1c1c00,
+	0x3838383838383800,
+	0x7070707070707000,
+	0xe0e0e0e0e0e0e000,
+	0xc0c0c0c0c0c0c000,
+	0x303030303030000,
+	0x707070707070000,
+	0xe0e0e0e0e0e0000,
+	0x1c1c1c1c1c1c0000,
+	0x3838383838380000,
+	0x7070707070700000,
+	0xe0e0e0e0e0e00000,
+	0xc0c0c0c0c0c00000,
+	0x303030303000000,
+	0x707070707000000,
+	0xe0e0e0e0e000000,
+	0x1c1c1c1c1c000000,
+	0x3838383838000000,
+	0x7070707070000000,
+	0xe0e0e0e0e0000000,
+	0xc0c0c0c0c0000000,
+	0x303030300000000,
+	0x707070700000000,
+	0xe0e0e0e00000000,
+	0x1c1c1c1c00000000,
+	0x3838383800000000,
+	0x7070707000000000,
+	0xe0e0e0e000000000,
+	0xc0c0c0c000000000,
+	0x303030000000000,
+	0x707070000000000,
+	0xe0e0e0000000000,
+	0x1c1c1c0000000000,
+	0x3838380000000000,
+	0x7070700000000000,
+	0xe0e0e00000000000,
+	0xc0c0c00000000000,
+	0x303000000000000,
+	0x707000000000000,
+	0xe0e000000000000,
+	0x1c1c000000000000,
+	0x3838000000000000,
+	0x7070000000000000,
+	0xe0e0000000000000,
+	0xc0c0000000000000,
+	0x300000000000000,
+	0x700000000000000,
+	0xe00000000000000,
+	0x1c00000000000000,
+	0x3800000000000000,
+	0x7000000000000000,
+	0xe000000000000000,
+	0xc000000000000000,
+	0x0,
+	0x0,
+	0x0,
+	0x0,
+	0x0,
+	0x0,
+	0x0,
+	0x0,
+	0x0,
+	0x0,
+	0x0,
+	0x0,
+	0x0,
+	0x0,
+	0x0,
+	0x0,
+	0x3,
+	0x7,
+	0xe,
+	0x1c,
+	0x38,
+	0x70,
+	0xe0,
+	0xc0,
+	0x303,
+	0x707,
+	0xe0e,
+	0x1c1c,
+	0x3838,
+	0x7070,
+	0xe0e0,
+	0xc0c0,
+	0x30303,
+	0x70707,
+	0xe0e0e,
+	0x1c1c1c,
+	0x383838,
+	0x707070,
+	0xe0e0e0,
+	0xc0c0c0,
+	0x3030303,
+	0x7070707,
+	0xe0e0e0e,
+	0x1c1c1c1c,
+	0x38383838,
+	0x70707070,
+	0xe0e0e0e0,
+	0xc0c0c0c0,
+	0x303030303,
+	0x707070707,
+	0xe0e0e0e0e,
+	0x1c1c1c1c1c,
+	0x3838383838,
+	0x7070707070,
+	0xe0e0e0e0e0,
+	0xc0c0c0c0c0,
+	0x30303030303,
+	0x70707070707,
+	0xe0e0e0e0e0e,
+	0x1c1c1c1c1c1c,
+	0x383838383838,
+	0x707070707070,
+	0xe0e0e0e0e0e0,
+	0xc0c0c0c0c0c0,
+	0x3030303030303,
+	0x7070707070707,
+	0xe0e0e0e0e0e0e,
+	0x1c1c1c1c1c1c1c,
+	0x38383838383838,
+	0x70707070707070,
+	0xe0e0e0e0e0e0e0,
+	0xc0c0c0c0c0c0c0,
+};
+
+
+
+inline int ChessPlayer::EvaluateMaterial(const GameState& state, bool isWhite)
+{
+	int mat = 0;
+
+	for (int i = 0; i < 6; ++i)
+	{
+		mat += GetBitCount(state.pieces[i] & state.occupancy[isWhite]) * pieceScores[i];
+	}
+
+	return mat;
+}
+
+inline int ChessPlayer::EvaluatePosition(const GameState& state, bool isWhite, bool endGame)
+{
+	uint64_t pieces = 0;
+	int positional = 0;
+
+	for (int i = 0; i < 5; i++)
+	{
+		pieces = state.pieces[i] & state.occupancy[isWhite];
+
+		while (pieces)
+		{
+			uint32_t square = GetLeastIndex(pieces);
+			positional += PositionalScores[i][square];
+			PopBit(pieces, square);
+		}
+	}
+
+	//King positional eval:
+	pieces = state.pieces[(int)PieceType::king - 1] & state.occupancy[1];
+	while (pieces)
+	{
+		uint32_t square = GetLeastIndex(pieces);
+		positional += PositionalScores[5 + endGame][square];
+		PopBit(pieces, square);
+	}
+
+	return positional;
+}
+
+
+
+inline int ChessPlayer::EvaluatePawnStructure(const GameState& state, bool isWhite)
+{
+	int structure = 0;
+	const uint64_t pawns = state.pieces[(int)PieceType::pawn - 1] & state.occupancy[isWhite];
+	const uint64_t opponentPawns = state.pieces[(int)PieceType::pawn - 1] & state.occupancy[!isWhite];
+	uint64_t pieces = pawns;
+
+	while (pieces)
+	{
+		uint32_t square = GetLeastIndex(pieces);
+		const int32_t file = ToFile(square);
+
+		if (!(passedPawnMasks[isWhite][square] & opponentPawns))
+		{
+			structure += passedPawnBonus[isWhite ? 7 - ToRank(square) : ToRank(square)];
+		}
+
+		if (!(pawns & isolatedPawnFiles[file]))
+		{
+			structure -= isolatedPawnPenalty;
+		}
+
+		structure -= (GetBitCount(files[file] & pawns)-1) * doubledPawnPenalty;
+		
+		PopBit(pieces, square);
+	}
+
+	return structure;
+}
+
+inline int ChessPlayer::EvaluateOpenFiles(const GameState& state, bool isWhite)
+{
+	return 0;
+}
+
+const int protectionScore = 5;
+const int threatScore = 20;
+const int attackWeight[7]{ 0, 50, 75, 88, 94, 97, 99 };
+
+inline int ChessPlayer::EvaluateKingSafety(const Chess& chess, const GameState& state, bool isWhite)
+{
+	const int32_t kingSquare = GetLeastIndex(state.pieces[(int)PieceType::king - 1] & state.occupancy[isWhite]);
+	uint64_t kingRegion = chess.GetKingAttacks(kingSquare);
+
+	int safety = 0;
+
+	//Evaluate protection:
+	safety += GetBitCount(kingRegion & state.occupancy[isWhite]) * protectionScore;
+
+	while (kingRegion)
+	{
+		int32_t square = GetLeastIndex(kingRegion);
+		safety -= chess.GetAttackCount(!isWhite, square) * threatScore;
+		PopBit(kingRegion, square);
+	}
+
+	return safety;
+}
+
+void InitEvaluationMasks()
+{
+
+	/*
+	std::wcout << L"White:\n";
+
+	//White:
+	for (int x = 0; x < 8; ++x)
+	{
+		//Set ranks.
+		uint64_t f = files[x];
+
+		if (x > 0)
+		{
+			f |= files[x - 1];
+		}
+
+		if (x < 7)
+		{
+			f |= files[x + 1];
+		}
+
+		for (int y = 0; y < 8; ++y)
+		{
+			uint64_t r{ 0 };
+			for (int i = y; i < 8; ++i)
+			{
+				r |= ranks[i];
+			}
+
+			passedPawnMasks[1][ToIndex(x, y)] = f & ~r;
+		}
+	}
+
+	std::wcout << L"Black:\n";
+
+	//black:
+	for (int x = 0; x < 8; ++x)
+	{
+		//Set ranks.
+		uint64_t f = files[x];
+
+		if (x > 0)
+		{
+			f |= files[x - 1];
+		}
+
+		if (x < 7)
+		{
+			f |= files[x + 1];
+		}
+
+		for (int y = 0; y < 8; ++y)
+		{
+			uint64_t r{ 0 };
+			for (int i = y; i >= 0; --i)
+			{
+				r |= ranks[i];
+			}
+
+			passedPawnMasks[0][ToIndex(x, y)] = f & ~r;
+		}
+	}
+
+	for (int i = 0; i < 2; ++i)
+	{
+		for (int square = 0; square < 64; ++square)
+		{
+			std::wcout << L"0x" << std::hex << passedPawnMasks[i][square] << L",\n";
+		}
+	}
+	*/
+	
+}
+
+
+
+
 int ChessPlayer::Evaluate(const GameState& state, bool isWhite)
 {
 	//king capture(should not happen, but just in case)
@@ -178,7 +539,22 @@ int ChessPlayer::Evaluate(const GameState& state, bool isWhite)
 		return INFINITY * (isWhite ? 1 : -1);
 	}
 
-	int eval = 0;
+	const int whiteMaterial = EvaluateMaterial(state, true);
+	const int blackMaterial = EvaluateMaterial(state, false);
+	int eval = whiteMaterial - blackMaterial;
+
+	eval += EvaluatePosition(state, true, blackMaterial <= 1500);
+	eval += EvaluatePawnStructure(state, true);
+	eval += EvaluateKingSafety(chess, state, true);
+
+	eval -= EvaluatePosition(state, false, blackMaterial <= 1500);
+	eval -= EvaluatePawnStructure(state, false);
+	eval -= EvaluateKingSafety(chess, state, true);
+	
+	return eval * (isWhite ? 1 : -1);
+}
+
+/*
 	int whiteMaterial = 0, blackMaterial = 0;
 	uint64_t pieces;
 
@@ -232,8 +608,7 @@ int ChessPlayer::Evaluate(const GameState& state, bool isWhite)
 	//eval -= GetIslandCount(state.pieces[(int)PieceType::pawn - 1] & state.occupancy[1]);
 	//eval += GetIslandCount(state.pieces[(int)PieceType::pawn - 1] & state.occupancy[0]);
 
-	return eval * (isWhite ? 1 : -1);
-}
+	*/
 
 bool ChessPlayer::IsMovePromising(const Move move)
 {
@@ -247,12 +622,17 @@ bool ChessPlayer::IsMovePromising(const Move move)
 		return true;
 	}
 
-
-	if (GetPieceType(move) != PieceType::pawn)
+	if (GetPromoteType(move) != PieceType::none)
 	{
 		return true;
 	}
 
+	//Ensuring that the move is made somewhere with sufficient defencers. 
+	const int32_t endPos = GetEndPosition(move);
+	if (chess.GetAttackCount(chess.IsWhiteTurn(),endPos) >= chess.GetAttackCount(!chess.IsWhiteTurn(), endPos))
+	{
+		return true;
+	}
 
 	/*
 	//responding to a threat made by the opponent:
@@ -261,12 +641,6 @@ bool ChessPlayer::IsMovePromising(const Move move)
 		return true;
 	}
 	*/
-
-
-	if (GetPromoteType(move) != PieceType::none)
-	{
-		return true;
-	}
 
 	return false;
 }

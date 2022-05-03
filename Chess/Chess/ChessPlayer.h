@@ -25,10 +25,18 @@ protected:
 
 	bool IsWhitePlayer() { return isWhite; }
 	
-
 	int ScoreMove(const Move move);
 	void Sort(std::vector<Move>& moves, Move transpositionMove);
+
+
+	static inline int EvaluateMaterial(const GameState& state, bool isWhite);
+	static inline int EvaluatePosition(const GameState& state, bool isWhite, bool endGame);
+	static inline int EvaluatePawnStructure(const GameState& state, bool isWhite);
+	static inline int EvaluateOpenFiles(const GameState& state, bool isWhite);
+	static inline int EvaluateKingSafety(const Chess& chess, const GameState& state, bool isWhite);
 	int Evaluate(const GameState& state, bool isWhite);
+
+
 	bool IsMovePromising(const Move move);
 	int32_t Quiescence(int alpha, int beta);
 	int32_t NegaMax(int alpha, int beta, int depth);
