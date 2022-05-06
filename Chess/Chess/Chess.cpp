@@ -371,7 +371,6 @@ void Chess::MakeMove(const Move move)
 	//push a new game state on the log.
 	log.push(log.top());
 	GameState& state = log.top();
-	state.move = move;
 
 	if (state.enpassantSquare != NO_ENPASSANT)
 	{
@@ -384,15 +383,6 @@ void Chess::MakeMove(const Move move)
 	unsigned int startPosition = GetStartPosition(move);
 	unsigned int endPosition = GetEndPosition(move);
 	PieceType pieceType = GetPieceType(move);
-
-	//decriment attack counts  for move ordering & king safety
-	uint64_t attacks = GetPieceAttacks(pieceType, startPosition, state.occupancy[0] | state.occupancy[1], isWhiteTurn);;
-	while (attacks)
-	{
-		int32_t square = GetLeastIndex(attacks);
-		--attackCounts[isWhiteTurn][square];
-		PopBit(attacks, square);
-	}
 
 	//Capture anything on that square.
 	PieceType captureType = GetCaptureType(move);
@@ -564,18 +554,6 @@ void Chess::MakeMove(const Move move)
 		break;
 	}
 
-
-
-	//add attack counts  for move ordering & king safety
-	attacks = GetPieceAttacks(pieceType, endPosition, state.occupancy[0] | state.occupancy[1], isWhiteTurn);;
-	while (attacks)
-	{
-		int32_t square = GetLeastIndex(attacks);
-		++attackCounts[isWhiteTurn][square];
-		PopBit(attacks, square);
-	}
-
-	//switch turn:
 	state.zobristKey ^= zobrist->GetTurnSeed();
 	isWhiteTurn = !isWhiteTurn;
 	
@@ -591,34 +569,8 @@ void Chess::MakeMove(const Move move)
 
 void Chess::UndoMove()
 {
-	Move move = log.top().move;
-	if (move)
-	{
-		//decriment attack counts  for move ordering & king safety
-		uint64_t attacks = GetPieceAttacks(GetPieceType(move), GetEndPosition(move), log.top().occupancy[0] | log.top().occupancy[1], !isWhiteTurn);;
-		while (attacks)
-		{
-			int32_t square = GetLeastIndex(attacks);
-			--attackCounts[!isWhiteTurn][square];
-			PopBit(attacks, square);
-		}
-	}
-
-
 	isWhiteTurn = !isWhiteTurn;
 	log.pop();
-
-	if (move)
-	{
-		//decriment attack counts  for move ordering & king safety
-		uint64_t attacks = GetPieceAttacks(GetPieceType(move), GetStartPosition(move), log.top().occupancy[0] | log.top().occupancy[1], isWhiteTurn);;
-		while (attacks)
-		{
-			int32_t square = GetLeastIndex(attacks);
-			++attackCounts[isWhiteTurn][square];
-			PopBit(attacks, square);
-		}
-	}
 
 	if (irreversables.top() == repetitionIndex)
 	{
@@ -650,11 +602,6 @@ bool Chess::IsDraw() const
 	}
 	
 	return false;
-}
-
-int Chess::GetAttackCount(bool isWhite, int square) const
-{
-	return attackCounts[isWhite][square];
 }
 
 uint64_t Chess::GetPieceAttacks(PieceType pieceType, int square, uint64_t occupancy, bool isWhite)
@@ -730,47 +677,6 @@ void Chess::SetUpBoard()
 	game.pieces[(int)PieceType::king - 1]    = 0x1000000000000010ULL;
 
 	game.zobristKey = zobrist->CalculateZobristKey(true, game);
-	uint64_t pieces;
-	uint64_t attacks;
-
-	for (int i = 0; i < 6; ++i)
-	{
-		pieces = game.pieces[i] & game.occupancy[1];
-
-		while (pieces)
-		{
-			int32_t square = GetLeastIndex(pieces);
-
-			attacks = GetPieceAttacks((PieceType)(i + 1), square, game.occupancy[0] | game.occupancy[1], true);
-			while (attacks)
-			{
-				int32_t attackSquare = GetLeastIndex(attacks);
-				++attackCounts[1][attackSquare];
-				PopBit(attacks, attackSquare);
-			}
-
-			PopBit(pieces, square);
-		}
-
-
-		pieces = game.pieces[i] & game.occupancy[0];
-
-		while (pieces)
-		{
-			int32_t square = GetLeastIndex(pieces);
-
-			attacks = GetPieceAttacks((PieceType)(i + 1), square, game.occupancy[0] | game.occupancy[1], false);
-			while (attacks)
-			{
-				int32_t attackSquare = GetLeastIndex(attacks);
-				++attackCounts[0][attackSquare];
-				PopBit(attacks, attackSquare);
-			}
-
-			PopBit(pieces, square);
-		}
-	}
-	
 }
 
 PieceType Chess::GetPieceTypeAt(int square) const

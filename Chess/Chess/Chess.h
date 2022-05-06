@@ -36,9 +36,6 @@ public:
 	bool IsCheck() const;
 	bool IsDraw() const;
 
-	//For evaluation:
-	int GetAttackCount(bool isWhite, int square) const;
-
 	uint64_t GetPieceAttacks(PieceType pieceType,int square, uint64_t occupancy, bool isWhite);
 	uint64_t GetPawnAttacks(bool isWhite, int square) const;
 	uint64_t GetKnightAttacks(int square) const;
@@ -95,6 +92,4 @@ private:
 	std::size_t repetitionIndex = 0;
 	uint64_t repetitionTable[300]{ 0 };
 	std::stack<std::size_t> irreversables;
-
-	int attackCounts[2][64]{ 0 };
 };

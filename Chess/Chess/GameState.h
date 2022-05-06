@@ -1,5 +1,4 @@
 #pragma once
-#include "Move.h"
 #include "BitboardManipulation.h"
 
 enum Castling : unsigned
@@ -14,7 +13,6 @@ constexpr auto NO_ENPASSANT = 64;
 
 struct GameState
 {
-	Move move = 0;									 //The move made this turn.
 	uint64_t pieces[6]{ 0ull };                      // pawns, bishops, knights, rooks, queen, king
 	uint64_t occupancy[2]{ 0ull };                   // black, white
 	uint64_t zobristKey{ 0ull };

@@ -28,16 +28,6 @@ inline void ToCoord(const int index, int& x, int& y)
 	y = index >> 3;
 }
 
-inline int ToRank(const int index)
-{
-	return index >> 3;
-}
-
-inline int ToFile(const int index)
-{
-	return index & 7;
-}
-
 void PrintBitboard(uint64_t bitboard);
 unsigned GetBitCount(uint64_t bitboard);
 unsigned GetLeastIndex(uint64_t bitboard);

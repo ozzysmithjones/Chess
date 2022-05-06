@@ -199,7 +199,7 @@ static constexpr int kingPositionalScoreMid[64] =
 	 0,   0,   0,   0,   0,   0,   0,   0,
 	 0,   0,   0,   0,   0,   0,   0,   0,
 	 0,   5,- 25, -50,  -50, -25,   5,  0,
-	 0,   5,  35,  -10, -15,  -10,  35,   0,
+	 0,   5,  35,  -15, -15,  -15,  40,   0,
 };
 // king positional score
 static constexpr int kingPositionalScoreLate[64] =
