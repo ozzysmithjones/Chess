@@ -1,2 +1,2 @@
 # Chess AI
-Chess AI devel;oped using the bitboards approach.
+Chess AI developed using the bitboards approach.
