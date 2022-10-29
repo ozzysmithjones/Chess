@@ -7,10 +7,10 @@
 void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, Chess& chess)
 {
 	*playerBlack = new ChessPlayer(chess, false);
-	(*playerBlack)->SetAI(false, 8);
+	(*playerBlack)->SetAI(true, 6);
 
 	*playerWhite = new ChessPlayer(chess, true);
-	(*playerWhite)->SetAI(false, 8);
+	//(*playerWhite)->SetAI(false, 10);
 }
 
 ChessPlayer::ChessPlayer(Chess& chess, bool isWhite)
@@ -80,7 +80,6 @@ bool ChessPlayer::chooseAIMove(std::vector<Move>& moves, Move& moveToMake)
 	moveToMake = this->moveToPlay;
 	return moveToMake != 0;
 }
-
 
 
 constexpr static int captureTable[6][6]
@@ -153,10 +152,11 @@ void ChessPlayer::Sort(std::vector<Move>& moves, Move transpositionMove)
 		}
 	}
 
-	for (int step = 0; step < moves.size(); step++) {
+	for (int step = 0; step < moves.size(); step++)
+	{
 		int min_idx = step;
-		for (int i = step + 1; i < moves.size(); i++) {
-
+		for (int i = step + 1; i < moves.size(); i++)
+		{
 			if (scores[i] > scores[min_idx])
 				min_idx = i;
 		}
@@ -320,6 +320,7 @@ int32_t ChessPlayer::Quiescence(int alpha, int beta)
 
 	return alpha; // fails low
 }
+
 int32_t ChessPlayer::NegaMax(int alpha, int beta, int depth)
 {
 	if (chess.IsDraw())
@@ -463,6 +464,3 @@ int32_t ChessPlayer::NegaMax(int alpha, int beta, int depth)
 	transpositionTable->Set(chess.GetGameState().zobristKey, depth, alpha, hashScoreType, bestMove);
 	return alpha; // fails low
 }
-
-
-

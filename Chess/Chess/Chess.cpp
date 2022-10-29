@@ -9,14 +9,13 @@
 #include <string>
 
 
-
-uint64_t Chess::pawnAttacks[2][64] = { 0 };
-uint64_t Chess::knightAttacks[64] = { 0 };
-uint64_t Chess::kingAttacks[64] = { 0 };
-uint64_t Chess::bishopAttacks[64] = { 0 };
-uint64_t Chess::rookAttacks[64] = { 0 };
-uint64_t Chess::bishopBlockedAttacks[64][512] = { 0 };
-uint64_t Chess::rookBlockedAttacks[64][4096] = { 0 };
+uint64_t Chess::pawnAttacks[2][64] = {0};
+uint64_t Chess::knightAttacks[64] = {0};
+uint64_t Chess::kingAttacks[64] = {0};
+uint64_t Chess::bishopAttacks[64] = {0};
+uint64_t Chess::rookAttacks[64] = {0};
+uint64_t Chess::bishopBlockedAttacks[64][512] = {0};
+uint64_t Chess::rookBlockedAttacks[64][4096] = {0};
 //ThreeFoldTable Chess::threeFoldTable;
 
 
@@ -59,7 +58,6 @@ uint64_t CalculateMagicNumberCandidate()
 {
 	return GetRandomU64() & GetRandomU64() & GetRandomU64();
 }
-
 
 
 /****************************************************************************\
@@ -152,8 +150,8 @@ void Chess::PrintBoard(std::vector<Move>& moves) const
 			{
 				std::wcout << (pieceType != PieceType::none ? L"X" : L".") << L" ";
 			}
-			else {
-
+			else
+			{
 #if UNICODE_PIECES
 				std::wcout << unicodePieces[(int)pieceType] << L" ";
 #else
@@ -162,7 +160,6 @@ void Chess::PrintBoard(std::vector<Move>& moves) const
 			}
 
 			SetConsoleTextAttribute(handle, whiteForeground);
-
 		}
 
 		std::wcout << L"\n";
@@ -212,7 +209,6 @@ void Chess::PrintBoard() const
 #endif
 
 			SetConsoleTextAttribute(handle, whiteForeground);
-
 		}
 
 
@@ -258,7 +254,6 @@ void Chess::CalculateLegalMoves(std::vector<Move>& moves)
 		UndoMove();
 		++i;
 	}
-
 }
 
 
@@ -556,11 +551,11 @@ void Chess::MakeMove(const Move move)
 
 	state.zobristKey ^= zobrist->GetTurnSeed();
 	isWhiteTurn = !isWhiteTurn;
-	
+
 	//store history for repetitions:
 	++repetitionIndex;
 	repetitionTable[repetitionIndex] = state.zobristKey;
-	
+
 	if (GetIsIrreversible(move))
 	{
 		irreversables.push(repetitionIndex);
@@ -587,7 +582,6 @@ bool Chess::IsCheck() const
 
 bool Chess::IsDraw() const
 {
-
 	if ((repetitionIndex - irreversables.top()) >= 50) // 50 move rule.
 	{
 		return true;
@@ -600,7 +594,7 @@ bool Chess::IsDraw() const
 			return true;
 		}
 	}
-	
+
 	return false;
 }
 
@@ -669,12 +663,12 @@ void Chess::SetUpBoard()
 	game.occupancy[0] = 0x000000000000ffffULL;
 	game.occupancy[1] = 0xffff000000000000ULL;
 
-	game.pieces[(int)PieceType::pawn - 1]    = 0x00ff00000000ff00ULL;
-	game.pieces[(int)PieceType::knight - 1]  = 0x4200000000000042ULL;
-	game.pieces[(int)PieceType::bishop - 1]  = 0x2400000000000024ULL;
-	game.pieces[(int)PieceType::rook - 1]    = 0x8100000000000081ULL;
-	game.pieces[(int)PieceType::queen - 1]   = 0x800000000000008ULL;
-	game.pieces[(int)PieceType::king - 1]    = 0x1000000000000010ULL;
+	game.pieces[(int)PieceType::pawn - 1] = 0x00ff00000000ff00ULL;
+	game.pieces[(int)PieceType::knight - 1] = 0x4200000000000042ULL;
+	game.pieces[(int)PieceType::bishop - 1] = 0x2400000000000024ULL;
+	game.pieces[(int)PieceType::rook - 1] = 0x8100000000000081ULL;
+	game.pieces[(int)PieceType::queen - 1] = 0x1000000000000010ULL;
+	game.pieces[(int)PieceType::king - 1] = 0x800000000000008ULL;
 
 	game.zobristKey = zobrist->CalculateZobristKey(true, game);
 }
@@ -695,7 +689,6 @@ PieceType Chess::GetPieceTypeAt(int square) const
 
 PieceType Chess::GetPieceAt(int square, bool& isWhite) const
 {
-
 	const uint64_t b = (1ull << square);
 	const auto& pieces = log.top().pieces;
 
@@ -711,7 +704,6 @@ PieceType Chess::GetPieceAt(int square, bool& isWhite) const
 	isWhite = false;
 	return PieceType::none;
 }
-
 
 
 inline int Chess::GetKingSquare(bool isWhite)
@@ -785,7 +777,7 @@ bool Chess::IsSquareAttackedBy(int square, bool isWhite, PieceType pieceType, ui
 {
 	const uint64_t b = (1ull << square);
 	const GameState& state = log.top();
-	uint64_t potential{ 0ull };
+	uint64_t potential{0ull};
 
 	switch (pieceType)
 	{
@@ -821,8 +813,8 @@ void Chess::CalculatePawnMoves(uint64_t pawn, const uint64_t* occupancies, std::
 
 	const uint64_t empty = ~(occupancies[0] | occupancies[1]);
 	int promoteRank;
-	uint64_t forward{ 0 };
-	uint64_t advanced{ 0 };
+	uint64_t forward{0};
+	uint64_t advanced{0};
 
 	if (isWhite)
 	{
@@ -992,7 +984,7 @@ uint64_t Chess::CalculateBishopAttacks(int square)
 	uint64_t attacks = 0ull;
 
 	int y, x;
-	int startY = (square /8);
+	int startY = (square / 8);
 	int startX = (square % 8);
 
 	for (y = startY + 1, x = startX + 1; y < 7 && x < 7; y++, x++)
@@ -1151,8 +1143,8 @@ uint64_t Chess::CalculateMagicNumber(int square, int attackCount, bool isBishop)
 	{
 		occupancyPermutations[index] = CalculatePermutation(index, attackCount, attackMask);
 		attacks[index] = isBishop
-			? CalculateBlockedBishopAttacks(square, occupancyPermutations[index])
-			: CalculateBlockedRookAttacks(square, occupancyPermutations[index]);
+			                 ? CalculateBlockedBishopAttacks(square, occupancyPermutations[index])
+			                 : CalculateBlockedRookAttacks(square, occupancyPermutations[index]);
 	}
 
 	// Search for the first random number that can be used as a magic number. A magic number is one that creates a unique index for every position with a different attack pattern
@@ -1203,26 +1195,21 @@ uint64_t Chess::CalculateMagicNumber(int square, int attackCount, bool isBishop)
 }
 
 
-
-
 void Chess::GenerateMagicNumbers()
 {
-	
 	for (int i = 0; i < 64; i++)
 	{
 		std::wcout << L"0x" << std::hex << CalculateMagicNumber(i, rookAttackCountBySquare[i], false) << L",\n";
 	}
-	
-	
+
 
 	std::wcout << "\n\n";
 
-	
+
 	for (int i = 0; i < 64; i++)
 	{
 		std::wcout << L"0x" << std::hex << CalculateMagicNumber(i, bishopAttackCountBySquare[i], true) << L",\n";
 	}
-	
 }
 
 

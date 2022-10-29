@@ -4,7 +4,7 @@
 #include "Chess.h"
 #include "TranspositionTable.h"
 
-constexpr auto MAX_PLY = 11;
+constexpr auto MAX_PLY = 20;
 
 int RowDiff(int position, int row);
 int CenterDiff(int position, bool maximise = true);
