@@ -79,8 +79,8 @@
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)Chess\freeglut\include;$(ProjectDir)</IncludePath>
-    <LibraryPath>$(SolutionDir)Chess\freeglut\lib;</LibraryPath>
+    <IncludePath>$(SolutionDir)Chess\freeglut\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);Windows SDK\lib\x64\Debug</IncludePath>
+    <LibraryPath>$(SolutionDir)Chess\freeglut\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);Windows SDK\lib\x64\Debug</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)Chess\freeglut\include;$(ProjectDir)</IncludePath>
