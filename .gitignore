@@ -71,6 +71,8 @@ StyleCopReport.xml
 *.ilk
 *.meta
 *.obj
+!Chess/model/cube*.obj
+!Chess/model/pawn*.obj
 *.iobj
 *.pch
 *.pdb

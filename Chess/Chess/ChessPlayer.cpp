@@ -7,10 +7,10 @@
 void ChessPlayer::setupPlayers(ChessPlayer** playerWhite, ChessPlayer** playerBlack, Chess& chess)
 {
 	*playerBlack = new ChessPlayer(chess, false);
-	(*playerBlack)->SetAI(true, 6);
+	(*playerBlack)->SetAI(false, 7);
 
 	*playerWhite = new ChessPlayer(chess, true);
-	//(*playerWhite)->SetAI(false, 10);
+	(*playerWhite)->SetAI(false, 7);
 }
 
 ChessPlayer::ChessPlayer(Chess& chess, bool isWhite)
