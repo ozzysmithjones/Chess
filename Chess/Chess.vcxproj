@@ -28,26 +28,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -70,21 +70,21 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(SolutionDir)\Chess\freeglut\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)\Chess\freeglut\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)Chess\freeglut\include;$(ProjectDir)</IncludePath>
+    <LibraryPath>$(SolutionDir)Chess\freeglut\lib;</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(SolutionDir)\Chess\freeglut\include;$(IncludePath);Windows SDK\include</IncludePath>
-    <LibraryPath>Windows SDK\lib\x86\Release;$(SolutionDir)\Chess\freeglut\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)Chess\freeglut\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);Windows SDK\lib\x86\Release</IncludePath>
+    <LibraryPath>$(SolutionDir)Chess\freeglut\lib;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);Windows SDK\lib\x86\Release</LibraryPath>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\David\source\repos\Chess\Chess\freeglut\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\David\source\repos\Chess\Chess\freeglut\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)Chess\freeglut\include;$(ProjectDir)</IncludePath>
+    <LibraryPath>$(SolutionDir)Chess\freeglut\lib;</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Users\David\source\repos\Chess\Chess\freeglut\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\David\source\repos\Chess\Chess\freeglut\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)Chess\freeglut\include;$(ProjectDir)</IncludePath>
+    <LibraryPath>$(SolutionDir)Chess\freeglut\lib;</LibraryPath>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
